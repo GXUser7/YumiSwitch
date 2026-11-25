@@ -1,0 +1,2873 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yumi NX — Правила, Настройки и Оверлей (M3 Expressive)</title>
+<style>
+  @font-face {
+    font-family: 'YumiDisplay';
+    src: url('../app/romfs/fonts/roboto_flex_display.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'YumiSans';
+    src: url('../app/romfs/fonts/roboto_flex_regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'YumiSans';
+    src: url('../app/romfs/fonts/roboto_flex_medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'YumiSans';
+    src: url('../app/romfs/fonts/roboto_flex_semibold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'YumiMono';
+    src: url('../app/romfs/fonts/roboto_mono_medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  :root {
+    --surface: #090B0F;
+    --surface-rgb: 9, 11, 15;
+    --background: #090B0F;
+    --surface-lowest: #05070A;
+    --surface-low: #0F131A;
+    --surface-low-rgb: 15, 19, 26;
+    --surface-container: #151A22;
+    --surface-container-rgb: 21, 26, 34;
+    --surface-high: #1C222C;
+    --surface-highest: #232A35;
+    --surface-variant: #29313D;
+
+    --primary: #A8C7FF;
+    --primary-rgb: 168, 199, 255;
+    --on-primary: #07203F;
+    --primary-container: #24314A;
+    --on-primary-container: #D5E3FF;
+
+    --secondary: #F0BE73;
+    --on-secondary: #402B08;
+    --secondary-container: #5A4118;
+    --on-secondary-container: #FFDEB0;
+
+    --tertiary: #8FD6C0;
+    --on-tertiary: #00382A;
+    --tertiary-container: #06503C;
+    --on-tertiary-container: #A9F2DC;
+
+    --error: #FF9885;
+    --on-error: #5C1508;
+    --error-container: #7E2415;
+    --on-error-container: #FFDAD3;
+
+    --on-surface: #E7ECF4;
+    --on-surface-variant: #9AA5B6;
+    --outline: #4E5867;
+    --outline-variant: #29313D;
+
+    /* Semantic latency ramp: never repainted by palette */
+    --latency-fast: #7EE0A8;
+    --latency-medium: #F0BE73;
+    --latency-slow: #FF9885;
+    --latency-dead: #7A8496;
+
+    --spring-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+    --spring-effects: cubic-bezier(0.34, 0.80, 0.34, 1);
+    --dur-spatial: 340ms;
+    --dur-effects: 200ms;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    background: var(--surface-lowest);
+    color: var(--on-surface);
+    font-family: 'YumiSans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mono {
+    font-family: 'YumiMono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ico {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  /* Interactive State Layer */
+  .sl {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      background-color var(--dur-effects) var(--spring-effects),
+      color var(--dur-effects) var(--spring-effects),
+      border-radius var(--dur-spatial) var(--spring-spatial),
+      transform var(--dur-spatial) var(--spring-spatial);
+  }
+  .sl::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-effects) var(--spring-effects);
+  }
+  .sl:hover::before { opacity: 0.08; }
+  .sl:active::before { opacity: 0.14; }
+  .sl:active { transform: scale(0.985); }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+  }
+
+  /* Showcase Page Shell */
+  .showcase-wrap {
+    max-width: 1416px;
+    margin: 0 auto;
+    padding: 16px 18px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Top Showcase Toolbar */
+  .showcase-bar {
+    background: var(--surface-container);
+    border-radius: 28px;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bar-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    display: grid;
+    place-items: center;
+  }
+  .bar-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 18px;
+    line-height: 1.2;
+    color: var(--on-surface);
+  }
+  .bar-sub {
+    font-size: 12.5px;
+    color: var(--on-surface-variant);
+    margin-top: 2px;
+  }
+
+  .bar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .palette-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-low);
+    padding: 4px;
+    border-radius: 9999px;
+  }
+
+  .pal-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 11px 0 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+  }
+  .pal-btn.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    font-weight: 600;
+  }
+  .pal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .amoled-btn {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--surface-low);
+    color: var(--on-surface-variant);
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .amoled-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .view-group {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .view-btn {
+    height: 40px;
+    padding: 0 14px;
+    background: var(--surface-low);
+    color: var(--on-surface-variant);
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+  .view-btn:first-child { border-radius: 20px 8px 8px 20px; }
+  .view-btn:last-child { border-radius: 8px 20px 20px 8px; }
+  .view-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-radius: 9999px !important;
+  }
+
+  /* Variant Showcase Cards */
+  .variant-card {
+    background: var(--surface-low);
+    border-radius: 32px;
+    padding: 20px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .variant-card.hidden {
+    display: none;
+  }
+
+  .variant-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .variant-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 820px;
+  }
+
+  .variant-kicker-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .variant-letter {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .variant-name {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 19px;
+    color: var(--on-surface);
+  }
+
+  .variant-tag {
+    height: 26px;
+    padding: 0 11px;
+    border-radius: 9999px;
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .variant-desc {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--on-surface-variant);
+  }
+
+  .tradeoffs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .trade-pill {
+    padding: 8px 14px;
+    border-radius: 16px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    max-width: 560px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .trade-pill strong {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .trade-pill.plus {
+    background: var(--tertiary-container);
+    color: var(--on-tertiary-container);
+  }
+  .trade-pill.minus {
+    background: var(--surface-high);
+    color: var(--on-surface-variant);
+  }
+
+  /* Dual 16:9 Stage Grid */
+  .stage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .stage-grid.single-focus {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .stage-col {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .stage-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .stage-caption > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stage-caption strong {
+    color: var(--on-surface);
+    font-weight: 600;
+  }
+
+  .stage-host {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .stage-1280 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1280px;
+    height: 720px;
+    transform-origin: top left;
+    background: var(--surface);
+    color: var(--on-surface);
+    overflow: hidden;
+  }
+
+  /* =========================================================
+     SHARED SWITCH UI PRIMITIVES (1280x720 LOGICAL SPACE)
+     ========================================================= */
+
+  .sw-app {
+    width: 1280px;
+    height: 720px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--surface);
+  }
+
+  .sw-topbar {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .sw-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sw-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--primary);
+    color: var(--on-primary);
+    display: grid;
+    place-items: center;
+  }
+  .sw-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    color: var(--on-surface);
+    line-height: 1.1;
+  }
+  .sw-subtitle {
+    font-size: 14px;
+    color: var(--on-surface-variant);
+    margin-top: 2px;
+  }
+
+  .sw-status-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sw-pill {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--surface-container);
+    color: var(--on-surface);
+    font-size: 14.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .sw-pill.primary {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+  .sw-pill.accent {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+  .sw-pill.warn {
+    background: var(--error-container);
+    color: var(--on-error-container);
+  }
+  .sw-pill.secondary {
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+  }
+  .sw-pill.tertiary {
+    background: var(--tertiary-container);
+    color: var(--on-tertiary-container);
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* M3 Toggle Switch */
+  .m3-switch {
+    width: 56px;
+    height: 32px;
+    border-radius: 9999px;
+    background: var(--surface-highest);
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: background-color var(--dur-effects) var(--spring-effects);
+  }
+  .m3-switch-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--on-surface-variant);
+    transform: translateX(0);
+    transition:
+      transform var(--dur-spatial) var(--spring-spatial),
+      background-color var(--dur-effects) var(--spring-effects),
+      width var(--dur-spatial) var(--spring-spatial);
+  }
+  .m3-switch.on {
+    background: var(--primary);
+  }
+  .m3-switch.on .m3-switch-thumb {
+    background: var(--on-primary);
+    transform: translateX(24px);
+  }
+
+  /* Recommended Badge (from Yumi SettingsScreen.kt) */
+  .rec-badge {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .rec-badge.hidden {
+    display: none;
+  }
+
+  /* Connected Button Group */
+  .cbg {
+    display: flex;
+    gap: 3px;
+  }
+  .cbg-btn {
+    flex: 1;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--surface-high);
+    color: var(--on-surface-variant);
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .cbg-btn:first-child { border-radius: 20px 8px 8px 20px; }
+  .cbg-btn:last-child { border-radius: 8px 20px 20px 8px; }
+  .cbg-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-radius: 9999px !important;
+  }
+  .cbg-btn.active-sec {
+    background: var(--secondary);
+    color: var(--on-secondary);
+    border-radius: 9999px !important;
+  }
+  .cbg-btn.active-err {
+    background: var(--error);
+    color: var(--on-error);
+    border-radius: 9999px !important;
+  }
+
+  /* Compact Segmented 28/8/4 Group */
+  .seg-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .seg-item {
+    background: var(--surface-container);
+    border-radius: 8px;
+    padding: 13px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .seg-item:first-child { border-radius: 24px 24px 8px 8px; }
+  .seg-item:last-child { border-radius: 8px 8px 24px 24px; }
+  .seg-item:only-child { border-radius: 24px; }
+
+  .seg-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .seg-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--on-surface);
+  }
+  .seg-sub {
+    font-size: 13.5px;
+    color: var(--on-surface-variant);
+    margin-top: 2px;
+  }
+
+  /* =========================================================
+     VARIANT A — TWO-COLUMN SETTINGS + NATIVE TESLA HUD
+     ========================================================= */
+  .va-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 316px 1fr;
+    gap: 18px;
+  }
+
+  .va-sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .va-cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .va-cat-btn {
+    height: 66px;
+    padding: 0 18px;
+    background: var(--surface-low);
+    color: var(--on-surface-variant);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: left;
+  }
+  .va-cat-btn:first-child { border-radius: 26px 26px 8px 8px; }
+  .va-cat-btn:last-child { border-radius: 8px 8px 26px 26px; }
+  .va-cat-btn.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    outline: 3px solid var(--primary);
+    outline-offset: -3px;
+    border-radius: 20px;
+  }
+
+  .va-cat-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16.5px;
+    font-weight: 600;
+  }
+
+  .va-cat-count {
+    padding: 3px 10px;
+    border-radius: 9999px;
+    background: var(--surface-high);
+    color: var(--on-surface);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .va-cat-btn.active .va-cat-count {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .va-sys-card {
+    background: var(--surface-container);
+    border-radius: 24px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .ram-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 9999px;
+    background: var(--surface-highest);
+    overflow: hidden;
+  }
+  .ram-fill {
+    height: 100%;
+    width: 61.8%;
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+
+  .va-main {
+    background: var(--surface-low);
+    border-radius: 28px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .va-pane-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .va-pane-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 22px;
+    color: var(--on-surface);
+  }
+
+  .mini-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .mini-card {
+    background: var(--surface-container);
+    border-radius: 22px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* =========================================================
+     VARIANT B — LIVE LOG <-> CUSTOM RULES + TITLEID
+     ========================================================= */
+  .vb-quickbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .vb-qchip {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--surface-container);
+    color: var(--on-surface);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .vb-qchip.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+
+  .vb-split {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.04fr;
+    gap: 16px;
+  }
+
+  .vb-col {
+    background: var(--surface-low);
+    border-radius: 28px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .vb-col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .vb-col-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 20px;
+  }
+
+  .log-row {
+    background: var(--surface-container);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .log-row:first-child { border-radius: 22px 22px 10px 10px; }
+  .log-row:last-child { border-radius: 10px 10px 22px 22px; }
+  .log-row.selected {
+    background: var(--surface-high);
+    outline: 3px solid var(--primary);
+    outline-offset: -3px;
+    border-radius: 18px;
+  }
+
+  .log-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .log-host {
+    font-family: 'YumiMono', monospace;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .log-meta {
+    font-size: 13px;
+    color: var(--on-surface-variant);
+    margin-top: 2px;
+  }
+
+  .route-tag {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .route-tag.vpn {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+  .route-tag.direct {
+    background: var(--tertiary-container);
+    color: var(--on-tertiary-container);
+  }
+  .route-tag.block {
+    background: var(--error-container);
+    color: var(--on-error-container);
+  }
+
+  .rule-chip-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .rule-chip {
+    height: 34px;
+    padding: 0 10px 0 12px;
+    border-radius: 12px;
+    background: var(--surface-container);
+    color: var(--on-surface);
+    font-size: 13.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .rule-chip-prefix {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: var(--surface-highest);
+    color: var(--primary);
+    font-family: 'YumiMono', monospace;
+    font-size: 11.5px;
+  }
+  .rule-chip-del {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--on-surface-variant);
+  }
+  .rule-chip-del:hover {
+    background: var(--error-container);
+    color: var(--on-error-container);
+  }
+
+  /* Variant B Drawer Popover inside 1280x720 for System/DPI/QR */
+  .vb-popover {
+    position: absolute;
+    right: 26px;
+    top: 120px;
+    width: 470px;
+    background: var(--surface-highest);
+    border-radius: 26px;
+    padding: 18px 20px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 20;
+    outline: 3px solid var(--primary);
+  }
+  .vb-popover.open {
+    display: flex;
+  }
+
+  /* =========================================================
+     VARIANT C — SIMPLE / EXPERT (YUMI 2.3.3)
+     ========================================================= */
+  .vc-mode-track {
+    background: var(--surface-high);
+    padding: 4px;
+    border-radius: 9999px;
+    display: inline-flex;
+    gap: 4px;
+  }
+  .vc-mode-btn {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .vc-mode-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .vc-simple-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .vc-card {
+    background: var(--surface-low);
+    border-radius: 28px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .vc-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .vc-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--surface-high);
+    color: var(--primary);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .vc-card-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 19px;
+    line-height: 1.2;
+  }
+  .vc-card-desc {
+    font-size: 13.5px;
+    line-height: 1.38;
+    color: var(--on-surface-variant);
+    margin-top: 3px;
+  }
+
+  .vc-expert-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1.05fr 1.1fr 0.92fr;
+    gap: 14px;
+  }
+
+  .vc-ex-col {
+    background: var(--surface-low);
+    border-radius: 26px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* =========================================================
+     SIMULATED SWITCH YOUTUBE PLAYER + 448x720 OVERLAY
+     ========================================================= */
+  .yt-stage {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    background: #070A0F;
+    overflow: hidden;
+  }
+
+  .yt-video-scene {
+    position: absolute;
+    inset: 0;
+  }
+
+  .yt-hud-top {
+    position: absolute;
+    top: 22px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .yt-pill {
+    height: 34px;
+    padding: 0 13px;
+    border-radius: 9999px;
+    background: rgba(12, 16, 22, 0.78);
+    color: #E7ECF4;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .yt-hud-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 46px 34px 24px;
+    background: linear-gradient(180deg, rgba(7, 10, 15, 0) 0%, rgba(7, 10, 15, 0.92) 78%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .yt-progress-track {
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.22);
+    position: relative;
+  }
+  .yt-progress-fill {
+    width: 62%;
+    height: 100%;
+    border-radius: 9999px;
+    background: #F23847;
+    position: relative;
+  }
+  .yt-progress-knob {
+    position: absolute;
+    right: -7px;
+    top: -4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #F23847;
+  }
+
+  .yt-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-left: 454px; /* Stays completely legible to the right of 448px overlay */
+  }
+
+  .yt-video-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 21px;
+    color: #F4F7FC;
+  }
+  .yt-video-sub {
+    font-size: 14px;
+    color: #A8B3C5;
+    margin-top: 2px;
+  }
+
+  /* 448x720 Tesla / Ultrahand Overlay Slot */
+  .ovl-slot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 448px;
+    height: 720px;
+    z-index: 10;
+  }
+
+  /* Variant A: Full-height classic libtesla surface at 90% opacity */
+  .ovl-a {
+    width: 100%;
+    height: 100%;
+    background: rgba(var(--surface-rgb), 0.90);
+    backdrop-filter: blur(12px);
+    padding: 18px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .ovl-a-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+  }
+
+  .ovl-a-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 24px;
+    color: var(--on-surface);
+  }
+
+  .ovl-a-ram {
+    background: rgba(var(--surface-container-rgb), 0.88);
+    border-radius: 18px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ovl-cat-lbl {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px 0;
+  }
+
+  .ovl-a-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ovl-row {
+    height: 52px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: rgba(var(--surface-container-rgb), 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .ovl-row:first-child { border-radius: 18px 18px 8px 8px; }
+  .ovl-row:last-child { border-radius: 8px 8px 18px 18px; }
+  .ovl-row.focused {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    outline: 3px solid var(--primary);
+    outline-offset: -3px;
+  }
+
+  .ovl-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--on-surface-variant);
+    padding: 4px 4px 0;
+  }
+
+  /* Variant B: M3E Floating Drawer Card inside 448x720 */
+  .ovl-b-wrap {
+    width: 100%;
+    height: 100%;
+    padding: 14px;
+  }
+  .ovl-b-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 28px;
+    background: rgba(var(--surface-low-rgb), 0.90);
+    backdrop-filter: blur(14px);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .hero-morph-btn {
+    width: 100%;
+    height: 76px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: var(--surface-high);
+    color: var(--on-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .hero-morph-btn.connected {
+    border-radius: 22px;
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .spark-card {
+    background: rgba(var(--surface-container-rgb), 0.92);
+    border-radius: 22px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .srv-cluster {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .srv-tile {
+    padding: 11px 12px;
+    background: rgba(var(--surface-container-rgb), 0.92);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+  }
+  .srv-tile:nth-child(1) { border-radius: 22px 8px 8px 8px; }
+  .srv-tile:nth-child(2) { border-radius: 8px 22px 8px 8px; }
+  .srv-tile:nth-child(3) { border-radius: 8px 8px 8px 22px; }
+  .srv-tile:nth-child(4) { border-radius: 8px 8px 22px 8px; }
+  .srv-tile.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    outline: 3px solid var(--primary);
+    outline-offset: -3px;
+  }
+
+  /* Variant C: Ultra-compact Bottom-Left Island inside 448x720 */
+  .ovl-c-wrap {
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .ovl-c-clear-hint {
+    margin-bottom: auto;
+    align-self: flex-start;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 9999px;
+    background: rgba(12, 16, 22, 0.62);
+    color: #E7ECF4;
+    font-size: 12.5px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ovl-c-island {
+    width: 100%;
+    border-radius: 28px;
+    background: rgba(var(--surface-container-rgb), 0.89);
+    backdrop-filter: blur(16px);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ovl-c-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .ovl-c-power {
+    height: 42px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    background: var(--surface-highest);
+    color: var(--on-surface);
+    font-size: 14.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .ovl-c-power.on {
+    border-radius: 16px;
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  /* Recommendation Card */
+  .reco-card {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border-radius: 28px;
+    padding: 20px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .reco-title {
+    font-family: 'YumiDisplay', sans-serif;
+    font-size: 19px;
+    margin-bottom: 5px;
+  }
+  .reco-text {
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 980px;
+    opacity: 0.94;
+  }
+  .reco-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .reco-pill {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  @media (max-width: 980px) {
+    .stage-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 1ms !important;
+      animation-duration: 1ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="showcase-wrap">
+
+  <!-- TOP SHOWCASE TOOLBAR -->
+  <header class="showcase-bar">
+    <div class="bar-brand">
+      <div class="bar-badge" aria-hidden="true">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/></svg>
+      </div>
+      <div>
+        <div class="bar-title">Yumi NX · Правила, Настройки и Оверлей</div>
+        <div class="bar-sub">3 концепции M3 Expressive: приложение yumi.nro (1280×720) + Tesla / Ultrahand yumi.ovl (448×720) поверх YouTube</div>
+      </div>
+    </div>
+
+    <div class="bar-controls">
+      <div class="palette-strip" id="paletteStrip" role="group" aria-label="Палитры Yumi"></div>
+
+      <button class="amoled-btn sl" id="amoledBtn" type="button">
+        <svg class="ico" style="width:17px;height:17px" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        <span>AMOLED</span>
+      </button>
+
+      <div class="view-group" id="viewGroup" role="group" aria-label="Фильтр вариантов">
+        <button class="view-btn sl active" data-view="all" type="button">Все 3 рядом</button>
+        <button class="view-btn sl" data-view="A" type="button">Вариант A</button>
+        <button class="view-btn sl" data-view="B" type="button">Вариант B</button>
+        <button class="view-btn sl" data-view="C" type="button">Вариант C</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================
+       VARIANT A
+       ========================================================= -->
+  <section class="variant-card" data-variant="A">
+    <div class="variant-head">
+      <div class="variant-title-wrap">
+        <div class="variant-kicker-row">
+          <span class="variant-letter">Вариант A</span>
+          <h2 class="variant-name">«Категории настроек + Нативный Tesla HUD»</h2>
+          <span class="variant-tag">Двухколоночные настройки · Чёткий Tesla-оверлей</span>
+        </div>
+        <p class="variant-desc">
+          Привычная для Switch-консолей архитектура: слева список категорий с живыми счётчиками, справа сегментированные списки 28/8/4px. Оверлей yumi.ovl сохраняет привычный компактный ритм libtesla в токенах Yumi с полосой памяти sysmodule.
+        </p>
+      </div>
+      <div class="tradeoffs">
+        <div class="trade-pill plus"><strong>+ Плюс:</strong> Предсказуемая навигация крестовиной, ноль лишнего текста, все 5 разделов (TitleID, DPI, Журнал, Пульт QR) всегда под рукой.</div>
+        <div class="trade-pill minus"><strong>- Минус:</strong> Классический полновысотный HUD 448×720 перекрывает левую треть видео YouTube при вызове.</div>
+      </div>
+    </div>
+
+    <div class="stage-grid">
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.nro</strong> · 1280×720</span><span>Кликай категории, TitleID, тумблеры и SpeedTest</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-a-nro"></div></div>
+      </div>
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.ovl</strong> (448×720) поверх YouTube</span><span>Переключай VPN, режим и сервер прямо в HUD</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-a-ovl"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       VARIANT B
+       ========================================================= -->
+  <section class="variant-card" data-variant="B">
+    <div class="variant-head">
+      <div class="variant-title-wrap">
+        <div class="variant-kicker-row">
+          <span class="variant-letter">Вариант B</span>
+          <h2 class="variant-name">«Журнал &lt;-&gt; Свои правила + Expressive-оверлей»</h2>
+          <span class="variant-tag">YouTube-отладка в 1 клик · Живой оверлей со скоростью</span>
+        </div>
+        <p class="variant-desc">
+          Экран yumi.nro заточен под быструю отладку маршрутов: слева живой журнал соединений, справа — бакеты CustomRules и TitleID Split Tunneling. Клик по любой строке журнала мгновенно раскрывает пилюлю «Через VPN / Напрямую / Блок» и добавляет домен в правило.
+        </p>
+      </div>
+      <div class="tradeoffs">
+        <div class="trade-pill plus"><strong>+ Плюс:</strong> Лечение YouTube (TCP VPN + блок QUIC UDP 443 + Direct RU) без переключения экранов; живой график скорости в оверлее.</div>
+        <div class="trade-pill minus"><strong>- Минус:</strong> Плотная компоновка: глубокие параметры (uTLS, Фрагментация, QR-пульт) спрятаны в верхнюю панель чипов.</div>
+      </div>
+    </div>
+
+    <div class="stage-grid">
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.nro</strong> · 1280×720</span><span>Нажми на строку журнала, чтобы добавить домен в правила</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-b-nro"></div></div>
+      </div>
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.ovl</strong> (448×720) поверх YouTube</span><span>Hero-капсула с морфингом + спарклайн</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-b-ovl"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       VARIANT C
+       ========================================================= -->
+  <section class="variant-card" data-variant="C">
+    <div class="variant-head">
+      <div class="variant-title-wrap">
+        <div class="variant-kicker-row">
+          <span class="variant-letter">Вариант C</span>
+          <h2 class="variant-name">«Налегке / Под капотом (как Yumi 2.3.3) + Компактный Оверлей-остров»</h2>
+          <span class="variant-tag">Два уровня сложности · Минимум перекрытия видео</span>
+        </div>
+        <p class="variant-desc">
+          Переносит главную идею Yumi 2.3.3 на Switch: в шапке тумблер «Налегке / Под капотом» и бейджи «Рекомендуется». В «Налегке» — 4 крупные карточки с оптимальными пресетами, а в yumi.ovl — нижний остров 448×720, оставляющий центр видео YouTube открытым.
+        </p>
+      </div>
+      <div class="tradeoffs">
+        <div class="trade-pill plus"><strong>+ Плюс:</strong> Дружелюбен к новичку в «Налегке» и полон инструментов в «Под капотом»; оверлей не закрывает центр плеера.</div>
+        <div class="trade-pill minus"><strong>- Минус:</strong> Экспертные настройки скрыты за вторым режимом; в компактном острове меньше деталей логов.</div>
+      </div>
+    </div>
+
+    <div class="stage-grid">
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.nro</strong> · 1280×720</span><span>Переключай «Налегке» и «Под капотом» в шапке</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-c-nro"></div></div>
+      </div>
+      <div class="stage-col">
+        <div class="stage-caption"><span><strong>yumi.ovl</strong> (448×720) поверх YouTube</span><span>Нижний остров · центр видео открыт</span></div>
+        <div class="stage-host"><div class="stage-1280" id="stage-c-ovl"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECOMMENDATION CARD -->
+  <footer class="reco-card">
+    <div>
+      <div class="reco-title">Рекомендация для Yumi NX</div>
+      <p class="reco-text">
+        Лучшая связка для Switch — <strong>гибрид Варианта C и Варианта B</strong>: взять за основу структуру <strong>«Налегке / Под капотом» из Варианта C</strong> с бейджами «Рекомендуется» (цельность с Android Yumi v2.3.3), внутрь «Под капотом» встроить <strong>живой сплит «Журнал &lt;-&gt; Свои правила» из Варианта B</strong>, а в <strong>yumi.ovl</strong> использовать <strong>компактный нижний остров (C)</strong> с быстрым переключением в полный спарклайн-вид (B) по кнопке Y.
+      </p>
+    </div>
+    <div class="reco-pills">
+      <span class="reco-pill">C: Налегке / Под капотом</span>
+      <span class="reco-pill">B: Лог -&gt; Правила в 1 клик</span>
+      <span class="reco-pill">C: Незаметный Оверлей-остров</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // Exact Yumi Palettes (from Palettes.kt & Color.kt)
+  const PALETTES = [
+    { id: 'Glacier', label: 'Glacier', hue: null, partnerHue: 0, dot: '#A8C7FF' },
+    { id: 'Rose',    label: 'Rose',    hue: 344,  partnerHue: 186, dot: '#E8A5B8' },
+    { id: 'Lilac',   label: 'Lilac',   hue: 268,  partnerHue: 160, dot: '#C4A8EB' },
+    { id: 'Mint',    label: 'Mint',    hue: 158,  partnerHue: 28,  dot: '#9BE0C7' },
+    { id: 'Peach',   label: 'Peach',   hue: 22,   partnerHue: 194, dot: '#EBBA9E' },
+    { id: 'Sand',    label: 'Sand',    hue: 44,   partnerHue: 210, dot: '#E8D39E' },
+    { id: 'Sea',     label: 'Sea',     hue: 196,  partnerHue: 32,  dot: '#9ED7EB' }
+  ];
+
+  function hslToHexAndRgb(h, s, l) {
+    const hue = ((h % 360) + 360) % 360;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (hue < 60) { r = c; g = x; }
+    else if (hue < 120) { r = x; g = c; }
+    else if (hue < 180) { g = c; b = x; }
+    else if (hue < 240) { g = x; b = c; }
+    else if (hue < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    const R = Math.round((r + m) * 255);
+    const G = Math.round((g + m) * 255);
+    const B = Math.round((b + m) * 255);
+    const hex = '#' + [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return { hex, rgb: `${R}, ${G}, ${B}` };
+  }
+
+  function applyTheme(paletteId, amoled) {
+    const pal = PALETTES.find(p => p.id === paletteId) || PALETTES[0];
+    const root = document.documentElement.style;
+
+    let vars;
+    if (pal.hue === null) {
+      vars = {
+        '--surface': '#090B0F', '--surface-rgb': '9, 11, 15',
+        '--background': '#090B0F',
+        '--surface-lowest': '#05070A',
+        '--surface-low': '#0F131A', '--surface-low-rgb': '15, 19, 26',
+        '--surface-container': '#151A22', '--surface-container-rgb': '21, 26, 34',
+        '--surface-high': '#1C222C',
+        '--surface-highest': '#232A35',
+        '--surface-variant': '#29313D',
+        '--primary': '#A8C7FF', '--primary-rgb': '168, 199, 255',
+        '--on-primary': '#07203F',
+        '--primary-container': '#24314A',
+        '--on-primary-container': '#D5E3FF',
+        '--secondary': '#F0BE73',
+        '--on-secondary': '#402B08',
+        '--secondary-container': '#5A4118',
+        '--on-secondary-container': '#FFDEB0',
+        '--tertiary': '#8FD6C0',
+        '--on-tertiary': '#00382A',
+        '--tertiary-container': '#06503C',
+        '--on-tertiary-container': '#A9F2DC',
+        '--on-surface': '#E7ECF4',
+        '--on-surface-variant': '#9AA5B6',
+        '--outline': '#4E5867',
+        '--outline-variant': '#29313D'
+      };
+    } else {
+      const h = pal.hue;
+      const second = (h + 26) % 360;
+      const partner = pal.partnerHue;
+      const bg = hslToHexAndRgb(h, 0.34, 0.055);
+      const lowest = hslToHexAndRgb(h, 0.40, 0.032);
+      const low = hslToHexAndRgb(h, 0.32, 0.085);
+      const cont = hslToHexAndRgb(h, 0.30, 0.115);
+      const high = hslToHexAndRgb(h, 0.28, 0.150);
+      const highest = hslToHexAndRgb(h, 0.26, 0.190);
+      const variant = hslToHexAndRgb(h, 0.26, 0.210);
+      const pri = hslToHexAndRgb(h, 0.55, 0.80);
+      vars = {
+        '--surface': bg.hex, '--surface-rgb': bg.rgb,
+        '--background': bg.hex,
+        '--surface-lowest': lowest.hex,
+        '--surface-low': low.hex, '--surface-low-rgb': low.rgb,
+        '--surface-container': cont.hex, '--surface-container-rgb': cont.rgb,
+        '--surface-high': high.hex,
+        '--surface-highest': highest.hex,
+        '--surface-variant': variant.hex,
+        '--primary': pri.hex, '--primary-rgb': pri.rgb,
+        '--on-primary': hslToHexAndRgb(h, 0.72, 0.13).hex,
+        '--primary-container': hslToHexAndRgb(h, 0.30, 0.25).hex,
+        '--on-primary-container': hslToHexAndRgb(h, 0.62, 0.90).hex,
+        '--secondary': hslToHexAndRgb(second, 0.52, 0.76).hex,
+        '--on-secondary': hslToHexAndRgb(second, 0.80, 0.13).hex,
+        '--secondary-container': hslToHexAndRgb(second, 0.30, 0.27).hex,
+        '--on-secondary-container': hslToHexAndRgb(second, 0.70, 0.88).hex,
+        '--tertiary': hslToHexAndRgb(partner, 0.42, 0.70).hex,
+        '--on-tertiary': hslToHexAndRgb(partner, 0.85, 0.11).hex,
+        '--tertiary-container': hslToHexAndRgb(partner, 0.60, 0.17).hex,
+        '--on-tertiary-container': hslToHexAndRgb(partner, 0.66, 0.80).hex,
+        '--on-surface': hslToHexAndRgb(h, 0.40, 0.93).hex,
+        '--on-surface-variant': hslToHexAndRgb(h, 0.20, 0.68).hex,
+        '--outline': hslToHexAndRgb(h, 0.18, 0.38).hex,
+        '--outline-variant': hslToHexAndRgb(h, 0.24, 0.22).hex
+      };
+    }
+
+    if (amoled) {
+      const h = pal.hue ?? 218;
+      const sat = pal.hue === null ? 0.12 : 0.24;
+      const lowA = pal.hue === null ? { hex: '#0A0A0C', rgb: '10, 10, 12' } : hslToHexAndRgb(h, sat, 0.042);
+      const contA = pal.hue === null ? { hex: '#121215', rgb: '18, 18, 21' } : hslToHexAndRgb(h, sat, 0.072);
+      const highA = pal.hue === null ? { hex: '#1B1B1F' } : hslToHexAndRgb(h, sat, 0.108);
+      const highestA = pal.hue === null ? { hex: '#242429' } : hslToHexAndRgb(h, sat, 0.145);
+      vars['--surface'] = '#000000';
+      vars['--surface-rgb'] = '0, 0, 0';
+      vars['--background'] = '#000000';
+      vars['--surface-lowest'] = '#000000';
+      vars['--surface-low'] = lowA.hex;
+      vars['--surface-low-rgb'] = lowA.rgb;
+      vars['--surface-container'] = contA.hex;
+      vars['--surface-container-rgb'] = contA.rgb;
+      vars['--surface-high'] = highA.hex;
+      vars['--surface-highest'] = highestA.hex;
+    }
+
+    Object.entries(vars).forEach(([k, v]) => root.setProperty(k, v));
+  }
+
+  // Material Symbols SVG Paths
+  const ICONS = {
+    shield: 'M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 10.99h6c-.53 4.12-3.28 7.79-6 8.94V13H6V6.3l6-2.25v8.94z',
+    apps: 'M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z',
+    tune: 'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
+    log: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z',
+    qr: 'M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3z',
+    spa: 'M15.49 9.63c-.18-2.79-1.31-5.51-3.43-7.63-2.14 2.14-3.32 4.86-3.55 7.63 1.28.68 2.46 1.56 3.49 2.63 1.03-1.06 2.21-1.94 3.49-2.63zm-6.5 2.65c-.14-.1-.3-.19-.45-.29.15.11.31.19.45.29zm6.42-.25c-.13.09-.27.16-.4.26.13-.1.27-.17.4-.26zM12 15.45C9.85 12.17 6.18 10 2 10c0 5.32 3.36 9.82 8.03 11.49.63.23 1.29.4 1.97.51.68-.12 1.33-.29 1.97-.51C18.64 19.82 22 15.32 22 10c-4.18 0-7.85 2.17-10 5.45z',
+    power: 'M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z',
+    speed: 'M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.44zm-9.79 6.84a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z',
+    memory: 'M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z',
+    update: 'M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z',
+    close: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    dns: 'M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z',
+    play: 'M8 5v14l11-7z',
+    cc: 'M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z',
+    arrowR: 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'
+  };
+
+  function icon(name, size = 20) {
+    return `<svg class="ico" style="width:${size}px;height:${size}px" viewBox="0 0 24 24"><path d="${ICONS[name] || ICONS.shield}"/></svg>`;
+  }
+
+  // Deterministic 21x21 QR Code SVG for yumi://remote
+  function renderQrSvg(size = 112) {
+    const N = 21;
+    let rects = '';
+    const isFinder = (r, c) =>
+      (r < 7 && c < 7) || (r < 7 && c >= N - 7) || (r >= N - 7 && c < 7);
+    const finderBlock = (ox, oy) => {
+      let s = `<rect x="${ox}" y="${oy}" width="7" height="7" rx="1.2" fill="currentColor"/>`;
+      s += `<rect x="${ox + 1}" y="${oy + 1}" width="5" height="5" rx="0.6" fill="var(--surface-lowest)"/>`;
+      s += `<rect x="${ox + 2}" y="${oy + 2}" width="3" height="3" rx="0.5" fill="currentColor"/>`;
+      return s;
+    };
+    rects += finderBlock(0, 0) + finderBlock(N - 7, 0) + finderBlock(0, N - 7);
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        if (isFinder(r, c)) continue;
+        if ((r === 7 && c < 8) || (c === 7 && r < 8) || (r === 7 && c >= N - 8) || (c === N - 8 && r < 8) || (r === N - 8 && c < 8) || (c === 7 && r >= N - 8)) continue;
+        const hash = ((r * 37 + c * 53 + r * c * 11) % 13);
+        if (hash < 6 || (r === 6 && c % 2 === 0) || (c === 6 && r % 2 === 0)) {
+          rects += `<rect x="${c}" y="${r}" width="0.88" height="0.88" rx="0.2" fill="currentColor"/>`;
+        }
+      }
+    }
+    return `<svg width="${size}" height="${size}" viewBox="-1 -1 23 23" style="display:block;border-radius:14px;background:var(--surface-lowest);padding:4px;color:var(--primary)">${rects}</svg>`;
+  }
+
+  // Live Shared Application State (authentic YumiSwitch data)
+  const state = {
+    palette: 'Glacier',
+    amoled: false,
+    view: 'all',
+
+    tunnelOn: true,
+    routingMode: 'Rules', // Global | Rules | Direct
+    blockQuic: true,
+    dohResolve: true,
+    autoStart: true,
+    tlsFingerprint: 'Auto',
+    fragmentMode: 'TlsHello',
+    showRecommended: true,
+
+    activeServerId: 'fi2',
+    servers: [
+      { id: 'fi2', name: 'Finland · Helsinki #2', short: 'FI #2', proto: 'VLESS Reality', ping: 42 },
+      { id: 'de1', name: 'Germany · Frankfurt',   short: 'DE',    proto: 'VLESS XHTTP',   ping: 54 },
+      { id: 'nl1', name: 'Netherlands · AMS',     short: 'NL',    proto: 'Hysteria2',     ping: 61 },
+      { id: 'pl1', name: 'Poland · Warsaw',       short: 'PL',    proto: 'VLESS Reality', ping: 48 }
+    ],
+
+    titleIds: [
+      { name: 'YouTube',         tid: '01003A400C3DA000', mode: 'VPN' },
+      { name: 'Веб-браузер HOS', tid: '010000000000100F', mode: 'VPN' },
+      { name: 'Tinfoil',         tid: '050000BADDAD0000', mode: 'Direct' },
+      { name: 'Moonlight-NX',    tid: '0100000000008001', mode: 'Direct' }
+    ],
+
+    logs: [
+      { id: 0, host: 'rr4---sn-n8v7kn7l.googlevideo.com', port: 443, proto: 'TCP', app: 'YouTube', route: 'VPN',   badge: 'VPN',          time: '14:22:18' },
+      { id: 1, host: 'www.youtube.com',                   port: 443, proto: 'TCP', app: 'YouTube', route: 'VPN',   badge: 'VPN',          time: '14:22:15' },
+      { id: 2, host: 'www.youtube.com',                   port: 443, proto: 'UDP', app: 'YouTube', route: 'Block', badge: 'BLOCK (QUIC)', time: '14:22:15' },
+      { id: 3, host: 'api.vk.com',                        port: 443, proto: 'TCP', app: 'Браузер', route: 'Direct',badge: 'DIRECT (RU)',  time: '14:21:59' },
+      { id: 4, host: '192.168.1.1',                       port: 80,  proto: 'TCP', app: 'Система', route: 'Direct',badge: 'DIRECT (LAN)', time: '14:21:44' }
+    ],
+
+    customRules: {
+      Proxy:  ['domain:googlevideo.com', 'domain:youtube.com', 'domain:ytimg.com'],
+      Direct: ['geosite:category-ru', 'domain:vk.com', '192.168.0.0/16'],
+      Block:  ['geosite:category-ads-all', 'udp:443']
+    },
+
+    speedTestResult: '94.6 Mbps · 42 ms',
+    speedTesting: false,
+    updateStatus: 'v0.3.1 · Актуально',
+
+    // Variant-local UI controls
+    vaCategory: 'routing', // routing | titleid | dpi | logrules | remote
+    vbLogFilter: 'All',    // All | VPN | Direct | Block
+    vbSelectedLog: 0,
+    vbRuleBucket: 'Proxy', // Proxy | Direct | Block
+    vbPopoverOpen: false,
+    vcMode: 'Simple',      // Simple | Expert
+    vcExpertTab: 'dpi',
+    lastToast: ''
+  };
+
+  function getLatencyColor(ping) {
+    if (ping <= 55) return 'var(--latency-fast)';
+    if (ping <= 110) return 'var(--latency-medium)';
+    return 'var(--latency-slow)';
+  }
+
+  function getActiveServer() {
+    return state.servers.find(s => s.id === state.activeServerId) || state.servers[0];
+  }
+
+  function addCustomRule(action, host) {
+    const clean = host.includes(':') ? host : `domain:${host}`;
+    ['Proxy', 'Direct', 'Block'].forEach(b => {
+      state.customRules[b] = state.customRules[b].filter(x => x !== clean && x !== host);
+    });
+    state.customRules[action].unshift(clean);
+    state.vbRuleBucket = action;
+    // Also update matching log entry visual status
+    state.logs.forEach(l => {
+      if (l.host === host) {
+        if (action === 'Proxy') { l.route = 'VPN'; l.badge = 'VPN (Rule)'; }
+        if (action === 'Direct') { l.route = 'Direct'; l.badge = 'DIRECT (Rule)'; }
+        if (action === 'Block') { l.route = 'Block'; l.badge = 'BLOCK (Rule)'; }
+      }
+    });
+  }
+
+  function removeCustomRule(bucket, entry) {
+    state.customRules[bucket] = state.customRules[bucket].filter(x => x !== entry);
+  }
+
+  function splitRule(entry) {
+    const idx = entry.indexOf(':');
+    if (idx > 0 && idx < 10) {
+      return { prefix: entry.slice(0, idx), body: entry.slice(idx + 1) };
+    }
+    return { prefix: null, body: entry };
+  }
+
+  function recBadgeHtml() {
+    return `<span class="rec-badge ${state.showRecommended ? '' : 'hidden'}">Рекомендуется</span>`;
+  }
+
+  function switchHtml(on, action, arg = '') {
+    return `<button class="m3-switch sl ${on ? 'on' : ''}" type="button" data-action="${action}" data-arg="${arg}" aria-pressed="${on}"><span class="m3-switch-thumb"></span></button>`;
+  }
+
+  function routingCbgHtml() {
+    const modes = ['Global', 'Rules', 'Direct'];
+    return `
+      <div class="cbg">
+        ${modes.map(m => `<button type="button" class="cbg-btn sl ${state.routingMode === m ? 'active' : ''}" data-action="set-routing" data-arg="${m}">${m}</button>`).join('')}
+      </div>
+    `;
+  }
+
+  // Simulated 1280x720 Switch YouTube Player Background
+  function renderYoutubeBackdrop() {
+    return `
+      <svg class="yt-video-scene" viewBox="0 0 1280 720" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="ytSky" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#0B192C"/>
+            <stop offset="52%" stop-color="#14324E"/>
+            <stop offset="100%" stop-color="#09131F"/>
+          </linearGradient>
+          <linearGradient id="ytAurora" x1="0" y1="0" x2="1" y2="0.4">
+            <stop offset="0%" stop-color="#48CAE4" stop-opacity="0.34"/>
+            <stop offset="55%" stop-color="#8FD6C0" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="#F0BE73" stop-opacity="0.24"/>
+          </linearGradient>
+        </defs>
+        <rect width="1280" height="720" fill="url(#ytSky)"/>
+        <path d="M0 190 Q 340 80 680 185 T 1280 125 L 1280 340 Q 860 230 480 320 T 0 280 Z" fill="url(#ytAurora)"/>
+        <circle cx="930" cy="195" r="78" fill="#F0BE73" fill-opacity="0.16"/>
+        <circle cx="930" cy="195" r="46" fill="#FFDEB0" fill-opacity="0.24"/>
+        <!-- Mountain silhouettes -->
+        <path d="M0 540 L210 380 L410 490 L690 295 L920 465 L1110 355 L1280 470 L1280 720 L0 720 Z" fill="#0B1522"/>
+        <path d="M0 590 L280 465 L560 565 L840 380 L1080 510 L1280 430 L1280 720 L0 720 Z" fill="#070D16"/>
+        <!-- Center Stage Switch Card inside video -->
+        <g transform="translate(380, 175)">
+          <rect x="0" y="0" width="760" height="256" rx="28" fill="#0D1622" fill-opacity="0.78"/>
+          <rect x="28" y="28" width="134" height="32" rx="16" fill="#F23847"/>
+          <text x="95" y="49" text-anchor="middle" fill="#FFFFFF" font-family="YumiSans, sans-serif" font-size="14" font-weight="600">ПРЯМОЙ ЭФИР</text>
+          <text x="28" y="114" fill="#F4F7FC" font-family="YumiDisplay, sans-serif" font-size="38">Nintendo Switch Showcase</text>
+          <text x="28" y="154" fill="#A8C7FF" font-family="YumiSans, sans-serif" font-size="21">Поток 1080p60 без буферизации · QUIC blocked</text>
+          <rect x="28" y="186" width="224" height="38" rx="19" fill="#1C2838"/>
+          <text x="140" y="210" text-anchor="middle" fill="#8FD6C0" font-family="YumiMono, monospace" font-size="15.5">googlevideo.com -&gt; VPN</text>
+          <rect x="268" y="186" width="186" height="38" rx="19" fill="#1C2838"/>
+          <text x="361" y="210" text-anchor="middle" fill="#F0BE73" font-family="YumiMono, monospace" font-size="15.5">vk.com -&gt; DIRECT</text>
+        </g>
+      </svg>
+
+      <div class="yt-hud-top">
+        <span class="yt-pill">${icon('hd', 16)} 1080p60 · VP9</span>
+        <span class="yt-pill tabular">Буфер 28s</span>
+        <span class="yt-pill">YouTube NX</span>
+      </div>
+
+      <div class="yt-hud-bottom">
+        <div class="yt-progress-track">
+          <div class="yt-progress-fill"><div class="yt-progress-knob"></div></div>
+        </div>
+        <div class="yt-meta-row">
+          <div>
+            <div class="yt-video-title">Nintendo Direct — Обзор осенних релизов [RU]</div>
+            <div class="yt-video-sub tabular">14:28 / 24:10 · Yumi Gaming · 128 тыс. просмотров</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="yt-pill">${icon('play', 17)} Пауза</span>
+            <span class="yt-pill">${icon('cc', 17)} Субтитры</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================
+  // RENDER VARIANT A
+  // =========================================================
+  function renderVariantA() {
+    const srv = getActiveServer();
+    const cats = [
+      { id: 'routing', label: 'Маршрутизация', icon: 'shield', count: state.routingMode },
+      { id: 'titleid', label: 'Приложения TitleID', icon: 'apps', count: `${state.titleIds.length}` },
+      { id: 'dpi',     label: 'Сеть и DPI', icon: 'tune', count: state.tlsFingerprint },
+      { id: 'logrules',label: 'Журнал и правила', icon: 'log', count: `${state.logs.length} · ${state.customRules.Proxy.length + state.customRules.Direct.length + state.customRules.Block.length}` },
+      { id: 'remote',  label: 'Пульт и система', icon: 'qr', count: 'HOS 20+' }
+    ];
+
+    let rightHtml = '';
+    if (state.vaCategory === 'routing') {
+      rightHtml = `
+        <div class="va-pane-head">
+          <div class="va-pane-title">Маршрутизация и базовые защиты</div>
+          <span class="sw-pill primary tabular">Режим: ${state.routingMode}</span>
+        </div>
+        <div class="mini-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="seg-title">Режим маршрутизации</span>
+            <span class="seg-sub">Global (всё) · Rules (по правилам) · Direct (напрямую)</span>
+          </div>
+          ${routingCbgHtml()}
+        </div>
+        <div class="seg-list">
+          <div class="seg-item">
+            <div>
+              <div class="seg-title-row"><span class="seg-title">Блокировка QUIC (UDP 443)</span>${recBadgeHtml()}</div>
+              <div class="seg-sub">Переводит YouTube на стабильный TCP, убирает подвисания</div>
+            </div>
+            ${switchHtml(state.blockQuic, 'toggle-quic')}
+          </div>
+          <div class="seg-item">
+            <div>
+              <div class="seg-title-row"><span class="seg-title">DoH-резолв адреса сервера</span>${recBadgeHtml()}</div>
+              <div class="seg-sub mono">https://1.1.1.1/dns-query · защита от подмены DNS</div>
+            </div>
+            ${switchHtml(state.dohResolve, 'toggle-doh')}
+          </div>
+          <div class="seg-item">
+            <div>
+              <div class="seg-title-row"><span class="seg-title">Автозапуск при загрузке Switch</span></div>
+              <div class="seg-sub">Запуск sysmodule yumi:ctl до старта оболочки HOS 20.0+</div>
+            </div>
+            ${switchHtml(state.autoStart, 'toggle-autostart')}
+          </div>
+        </div>
+        <div class="mini-card" style="padding:12px 16px;gap:8px;margin-top:auto">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="seg-title" style="font-size:15.5px">TitleID Split Tunneling (быстрый статус)</span>
+            <button type="button" class="sw-pill sl" style="height:28px;font-size:12.5px" data-action="va-cat" data-arg="titleid">Настроить ${icon('arrowR', 15)}</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            ${state.titleIds.map(t => `
+              <button type="button" class="sl" data-action="cycle-tid" data-arg="${t.tid}" style="background:var(--surface-high);border-radius:14px;padding:8px 10px;text-align:left">
+                <div style="font-size:13.5px;font-weight:600;color:var(--on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+                <div style="font-size:12px;margin-top:2px;font-weight:600;color:${t.mode === 'VPN' ? 'var(--primary)' : 'var(--tertiary)'}">${t.mode === 'VPN' ? 'Через VPN' : 'Напрямую'}</div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else if (state.vaCategory === 'titleid') {
+      rightHtml = `
+        <div class="va-pane-head">
+          <div class="va-pane-title">Приложения TitleID (Split Tunneling)</div>
+          <span class="sw-pill primary tabular">${state.titleIds.filter(t => t.mode === 'VPN').length} через VPN</span>
+        </div>
+        <div class="seg-list">
+          ${state.titleIds.map(t => `
+            <div class="seg-item" style="padding:16px 18px">
+              <div>
+                <div class="seg-title">${t.name}</div>
+                <div class="seg-sub mono">ProgramID: ${t.tid}</div>
+              </div>
+              <div class="cbg" style="width:290px">
+                <button type="button" class="cbg-btn sl ${t.mode === 'VPN' ? 'active' : ''}" data-action="set-tid" data-arg="${t.tid}|VPN">Через VPN</button>
+                <button type="button" class="cbg-btn sl ${t.mode === 'Direct' ? 'active-sec' : ''}" data-action="set-tid" data-arg="${t.tid}|Direct">Напрямую</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="mini-card" style="margin-top:auto">
+          <div class="seg-sub" style="font-size:14.5px">При режиме <strong style="color:var(--on-surface)">Rules</strong> трафик YouTube и браузера уходит в туннель, а локальный стриминг Moonlight-NX и загрузки Tinfoil идут напрямую без задержки.</div>
+        </div>
+      `;
+    } else if (state.vaCategory === 'dpi') {
+      const fps = ['Auto', 'Chrome', 'Firefox', 'Safari', 'Edge', 'Random'];
+      const frags = ['Off', 'TlsHello', 'TcpSegments'];
+      rightHtml = `
+        <div class="va-pane-head">
+          <div class="va-pane-title">Сеть, uTLS и фрагментация пакетов</div>
+          <span class="sw-pill secondary">DPI-обход</span>
+        </div>
+        <div class="mini-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="seg-title">uTLS-отпечаток (ClientHello)</span>
+            <span class="seg-sub">Маскировка TLS-рукопожатия</span>
+          </div>
+          <div class="cbg">
+            ${fps.map(f => `<button type="button" class="cbg-btn sl ${state.tlsFingerprint === f ? 'active' : ''}" data-action="set-utls" data-arg="${f}">${f}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mini-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="seg-title">Фрагментация пакетов</span>
+            <span class="seg-sub mono">Длина: 20-50 · Интервал: 2-5 ms</span>
+          </div>
+          <div class="cbg">
+            ${frags.map(f => `<button type="button" class="cbg-btn sl ${state.fragmentMode === f ? 'active' : ''}" data-action="set-frag" data-arg="${f}">${f}</button>`).join('')}
+          </div>
+        </div>
+        <div class="seg-list">
+          <div class="seg-item">
+            <div><div class="seg-title-row"><span class="seg-title">Блокировка QUIC (UDP 443)</span>${recBadgeHtml()}</div></div>
+            ${switchHtml(state.blockQuic, 'toggle-quic')}
+          </div>
+          <div class="seg-item">
+            <div><div class="seg-title-row"><span class="seg-title">DoH-резолв адреса сервера</span>${recBadgeHtml()}</div></div>
+            ${switchHtml(state.dohResolve, 'toggle-doh')}
+          </div>
+        </div>
+      `;
+    } else if (state.vaCategory === 'logrules') {
+      const allRules = [
+        ...state.customRules.Proxy.map(r => ({ b: 'Proxy', r, lbl: 'VPN' })),
+        ...state.customRules.Direct.map(r => ({ b: 'Direct', r, lbl: 'Напр.' })),
+        ...state.customRules.Block.map(r => ({ b: 'Block', r, lbl: 'Блок' }))
+      ].slice(0, 6);
+      rightHtml = `
+        <div class="va-pane-head">
+          <div class="va-pane-title">Журнал соединений и Свои правила</div>
+          <span class="sw-pill primary tabular">${allRules.length} правил</span>
+        </div>
+        <div class="seg-list">
+          ${state.logs.map(l => `
+            <div class="seg-item" style="padding:10px 14px">
+              <div style="min-width:0;flex:1">
+                <div class="log-host">${l.host}:${l.port}</div>
+                <div class="log-meta">${l.proto} · ${l.app} · ${l.time}</div>
+              </div>
+              <div class="cbg" style="width:270px;flex-shrink:0">
+                <button type="button" class="cbg-btn sl ${l.route === 'VPN' ? 'active' : ''}" style="height:34px;font-size:12.5px;padding:0 8px" data-action="add-rule" data-arg="Proxy|${l.host}">VPN</button>
+                <button type="button" class="cbg-btn sl ${l.route === 'Direct' ? 'active-sec' : ''}" style="height:34px;font-size:12.5px;padding:0 8px" data-action="add-rule" data-arg="Direct|${l.host}">Напрямую</button>
+                <button type="button" class="cbg-btn sl ${l.route === 'Block' ? 'active-err' : ''}" style="height:34px;font-size:12.5px;padding:0 8px" data-action="add-rule" data-arg="Block|${l.host}">Блок</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="rule-chip-wrap" style="margin-top:auto">
+          ${allRules.map(item => `
+            <span class="rule-chip">
+              <strong style="font-size:11.5px;color:var(--primary)">${item.lbl}</strong>
+              <span class="mono" style="font-size:12.5px">${item.r}</span>
+            </span>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      rightHtml = `
+        <div class="va-pane-head">
+          <div class="va-pane-title">Пульт с телефона, замеры и система</div>
+          <span class="sw-pill tertiary tabular">HOS 20.0+</span>
+        </div>
+        <div class="mini-grid-2" style="flex:1">
+          <div class="mini-card" style="justify-content:space-between">
+            <div>
+              <div class="seg-title">Пульт с телефона</div>
+              <div class="seg-sub mono" style="margin-top:3px">yumi://remote · 192.168.1.42:7980</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              ${renderQrSvg(110)}
+              <div class="seg-sub" style="line-height:1.45">Откройте камеру или приложение Yumi на телефоне для ввода подписок и правил.</div>
+            </div>
+          </div>
+          <div class="mini-card" style="justify-content:space-between">
+            <div>
+              <div class="seg-title">Память sysmodule</div>
+              <div class="seg-sub">Лимит HOS 20.0+ (5.5 MB heap)</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:600;margin-bottom:8px" class="tabular">
+                <span>Занято: 3.4 MB</span><span style="color:var(--primary)">61.8%</span>
+              </div>
+              <div class="ram-track" style="height:14px"><div class="ram-fill"></div></div>
+              <div class="seg-sub" style="margin-top:8px">Активных сокетов: 18 · MITM bsd:u активен</div>
+            </div>
+          </div>
+          <div class="mini-card" style="justify-content:space-between">
+            <div>
+              <div class="seg-title">SpeedTest через туннель</div>
+              <div class="seg-sub">Сервер: ${srv.name}</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span class="tabular" style="font-size:18px;font-weight:600;color:var(--primary)">${state.speedTesting ? 'Замер…' : state.speedTestResult}</span>
+              <button type="button" class="sw-pill accent sl" data-action="run-speedtest">${icon('speed', 18)} Замерить</button>
+            </div>
+          </div>
+          <div class="mini-card" style="justify-content:space-between">
+            <div>
+              <div class="seg-title">Обновления GitHub</div>
+              <div class="seg-sub">GXUser7/YumiSwitch · Релизный канал</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span class="tabular" style="font-size:15.5px;font-weight:600">${state.updateStatus}</span>
+              <button type="button" class="sw-pill primary sl" data-action="check-update">${icon('update', 18)} Проверить</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('stage-a-nro').innerHTML = `
+      <div class="sw-app">
+        <div class="sw-topbar">
+          <div class="sw-brand">
+            <div class="sw-logo">${icon('shield', 24)}</div>
+            <div>
+              <div class="sw-title">Yumi NX · Настройки</div>
+              <div class="sw-subtitle">Nintendo Switch · yumi.nro</div>
+            </div>
+          </div>
+          <div class="sw-status-strip">
+            <button type="button" class="sw-pill sl ${state.tunnelOn ? 'primary' : 'warn'}" data-action="toggle-tunnel">
+              <span class="dot" style="background:${state.tunnelOn ? 'var(--latency-fast)' : 'var(--error)'}"></span>
+              <span class="tabular">${state.tunnelOn ? `Подключён · ${srv.short} · ${srv.ping} ms` : 'Отключён'}</span>
+            </button>
+            <span class="sw-pill tabular">${icon('memory', 18)} 3.4 / 5.5 MB · HOS 20.0+</span>
+          </div>
+        </div>
+
+        <div class="va-body">
+          <aside class="va-sidebar">
+            <div class="va-cat-list">
+              ${cats.map(c => `
+                <button type="button" class="va-cat-btn sl ${state.vaCategory === c.id ? 'active' : ''}" data-action="va-cat" data-arg="${c.id}">
+                  <span class="va-cat-left">${icon(c.icon, 21)} <span>${c.label}</span></span>
+                  <span class="va-cat-count tabular">${c.count}</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="va-sys-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+                <span style="color:var(--on-surface-variant)">Память sysmodule</span>
+                <strong class="tabular">3.4 / 5.5 MB</strong>
+              </div>
+              <div class="ram-track"><div class="ram-fill"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--on-surface-variant)">
+                <span>HOS 20.0+</span>
+                <span>A Выбор · L/R Категория</span>
+              </div>
+            </div>
+          </aside>
+
+          <main class="va-main">${rightHtml}</main>
+        </div>
+      </div>
+    `;
+
+    // Overlay A (448x720 Tesla HUD over YouTube)
+    document.getElementById('stage-a-ovl').innerHTML = `
+      <div class="yt-stage">
+        ${renderYoutubeBackdrop()}
+        <div class="ovl-slot">
+          <div class="ovl-a">
+            <div class="ovl-a-head">
+              <div>
+                <div class="ovl-a-title">Yumi NX</div>
+                <div style="font-size:13.5px;color:var(--on-surface-variant)">Tesla HUD · yumi.ovl · HOS 20.0+</div>
+              </div>
+              <span class="sw-pill ${state.tunnelOn ? 'primary' : 'warn'}" style="height:32px;font-size:13px">
+                <span class="dot" style="background:${state.tunnelOn ? 'var(--latency-fast)' : 'var(--error)'}"></span>
+                ${state.tunnelOn ? 'ON' : 'OFF'}
+              </span>
+            </div>
+
+            <div class="ovl-a-ram">
+              <div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:600" class="tabular">
+                <span>RAM sysmodule</span>
+                <span style="color:var(--primary)">3.4 / 5.5 MB (62%)</span>
+              </div>
+              <div class="ram-track"><div class="ram-fill"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--on-surface-variant)" class="tabular">
+                <span>${state.tunnelOn ? `↓ 18.4 MB/s · ↑ 1.2 MB/s` : '↓ 0 KB/s · ↑ 0 KB/s'}</span>
+                <span>${srv.short} · ${srv.ping} ms</span>
+              </div>
+            </div>
+
+            <div class="ovl-cat-lbl">Туннель</div>
+            <div class="ovl-a-list">
+              <div class="ovl-row sl" data-action="toggle-tunnel">
+                <span style="font-size:16px;font-weight:600">VPN Туннель</span>
+                ${switchHtml(state.tunnelOn, 'toggle-tunnel')}
+              </div>
+              <button type="button" class="ovl-row sl" data-action="cycle-routing" style="width:100%">
+                <span style="font-size:16px;font-weight:600">Маршрутизация</span>
+                <span class="sw-pill primary" style="height:30px;font-size:13.5px">${state.routingMode}</span>
+              </button>
+            </div>
+
+            <div class="ovl-cat-lbl">Быстрые серверы (1 тап)</div>
+            <div class="ovl-a-list">
+              ${state.servers.map(s => `
+                <button type="button" class="ovl-row sl ${state.activeServerId === s.id ? 'focused' : ''}" data-action="set-server" data-arg="${s.id}" style="width:100%">
+                  <span style="font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</span>
+                  <span class="tabular" style="font-size:14px;font-weight:600;color:${getLatencyColor(s.ping)}">${s.ping} ms</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="ovl-foot">
+              <span>A Переключить · B Закрыть</span>
+              <span class="mono">L+↓+R3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================
+  // RENDER VARIANT B
+  // =========================================================
+  function renderVariantB() {
+    const srv = getActiveServer();
+    const filteredLogs = state.logs.filter(l => state.vbLogFilter === 'All' || l.route === state.vbLogFilter);
+    const bucketEntries = state.customRules[state.vbRuleBucket];
+    const fragNext = state.fragmentMode === 'Off' ? 'TlsHello' : (state.fragmentMode === 'TlsHello' ? 'TcpSegments' : 'Off');
+    const utlsNext = state.tlsFingerprint === 'Auto' ? 'Chrome' : (state.tlsFingerprint === 'Chrome' ? 'Firefox' : 'Auto');
+
+    document.getElementById('stage-b-nro').innerHTML = `
+      <div class="sw-app" style="position:relative">
+        <div class="sw-topbar">
+          <div class="sw-brand">
+            <div class="sw-logo">${icon('log', 24)}</div>
+            <div>
+              <div class="sw-title">Yumi NX · Журнал и Правила</div>
+              <div class="sw-subtitle">Кликните домен слева, чтобы создать правило маршрутизации в 1 нажатие</div>
+            </div>
+          </div>
+          <div class="sw-status-strip">
+            <button type="button" class="sw-pill sl ${state.tunnelOn ? 'primary' : 'warn'}" data-action="toggle-tunnel">
+              <span class="dot" style="background:${state.tunnelOn ? 'var(--latency-fast)' : 'var(--error)'}"></span>
+              <span class="tabular">${state.tunnelOn ? `VPN ВКЛ · ${srv.short} ${srv.ping} ms` : 'VPN ВЫКЛ'}</span>
+            </button>
+            <span class="sw-pill tabular">${icon('memory', 17)} 3.4 / 5.5 MB · HOS 20.0+</span>
+          </div>
+        </div>
+
+        <!-- Quick Settings & DPI Strip -->
+        <div class="vb-quickbar">
+          <button type="button" class="vb-qchip sl ${state.routingMode === 'Rules' ? 'active' : ''}" data-action="cycle-routing">Режим: ${state.routingMode}</button>
+          <button type="button" class="vb-qchip sl ${state.blockQuic ? 'active' : ''}" data-action="toggle-quic">QUIC Блок: ${state.blockQuic ? 'ВКЛ' : 'ВЫКЛ'}</button>
+          <button type="button" class="vb-qchip sl ${state.dohResolve ? 'active' : ''}" data-action="toggle-doh">DoH: ${state.dohResolve ? '1.1.1.1' : 'Выкл'}</button>
+          <button type="button" class="vb-qchip sl active" data-action="set-utls" data-arg="${utlsNext}">uTLS: ${state.tlsFingerprint}</button>
+          <button type="button" class="vb-qchip sl ${state.fragmentMode !== 'Off' ? 'active' : ''}" data-action="set-frag" data-arg="${fragNext}">Frag: ${state.fragmentMode}</button>
+          <button type="button" class="vb-qchip sl ${state.autoStart ? 'active' : ''}" data-action="toggle-autostart">Автостарт: ${state.autoStart ? 'Да' : 'Нет'}</button>
+          <button type="button" class="vb-qchip sl ${state.vbPopoverOpen ? 'active' : ''}" data-action="vb-toggle-pop" style="margin-left:auto">${icon('qr', 17)} Пульт QR · SpeedTest</button>
+        </div>
+
+        <div class="vb-split">
+          <!-- Left: Connection Log -->
+          <section class="vb-col">
+            <div class="vb-col-head">
+              <span class="vb-col-title">Журнал соединений</span>
+              <div class="cbg" style="width:270px">
+                ${['All|Все', 'VPN|VPN', 'Direct|Напр.', 'Block|Блок'].map(item => {
+                  const [id, lbl] = item.split('|');
+                  return `<button type="button" class="cbg-btn sl ${state.vbLogFilter === id ? 'active' : ''}" style="height:34px;font-size:13px;padding:0 8px" data-action="vb-filter" data-arg="${id}">${lbl}</button>`;
+                }).join('')}
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:5px">
+              ${filteredLogs.map(l => {
+                const isSel = state.vbSelectedLog === l.id;
+                const tagCls = l.route === 'VPN' ? 'vpn' : (l.route === 'Block' ? 'block' : 'direct');
+                return `
+                  <div class="log-row sl ${isSel ? 'selected' : ''}" data-action="vb-select-log" data-arg="${l.id}">
+                    <div class="log-top">
+                      <div style="min-width:0;flex:1">
+                        <div class="log-host">${l.host}:${l.port}</div>
+                        <div class="log-meta">${l.proto} · ${l.app} · ${l.time}</div>
+                      </div>
+                      <span class="route-tag ${tagCls}">${l.badge}</span>
+                    </div>
+                    ${isSel ? `
+                      <div style="display:flex;align-items:center;gap:8px;padding-top:2px">
+                        <span style="font-size:12.5px;color:var(--on-surface-variant);white-space:nowrap">Правило:</span>
+                        <div class="cbg" style="flex:1">
+                          <button type="button" class="cbg-btn sl ${l.route === 'VPN' ? 'active' : ''}" style="height:34px;font-size:13px" data-action="add-rule" data-arg="Proxy|${l.host}">Через VPN</button>
+                          <button type="button" class="cbg-btn sl ${l.route === 'Direct' ? 'active-sec' : ''}" style="height:34px;font-size:13px" data-action="add-rule" data-arg="Direct|${l.host}">Напрямую</button>
+                          <button type="button" class="cbg-btn sl ${l.route === 'Block' ? 'active-err' : ''}" style="height:34px;font-size:13px" data-action="add-rule" data-arg="Block|${l.host}">Блок</button>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:14px;background:var(--surface-container);font-size:13px;color:var(--on-surface-variant)">
+              <span>Нажмите на любую строку, чтобы назначить маршрут</span>
+              <span class="tabular" style="font-weight:600;color:var(--primary)">${filteredLogs.length} / ${state.logs.length} записей</span>
+            </div>
+          </section>
+
+          <!-- Right: CustomRules + TitleID Split Tunneling -->
+          <section class="vb-col" style="justify-content:space-between">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div class="vb-col-head">
+                <span class="vb-col-title">Свои правила (CustomRules)</span>
+                <span style="font-size:13px;color:var(--on-surface-variant)">Выше правил провайдера</span>
+              </div>
+
+              <div class="cbg">
+                <button type="button" class="cbg-btn sl ${state.vbRuleBucket === 'Proxy' ? 'active' : ''}" style="height:38px;font-size:14px" data-action="vb-bucket" data-arg="Proxy">Через VPN · ${state.customRules.Proxy.length}</button>
+                <button type="button" class="cbg-btn sl ${state.vbRuleBucket === 'Direct' ? 'active-sec' : ''}" style="height:38px;font-size:14px" data-action="vb-bucket" data-arg="Direct">Напрямую · ${state.customRules.Direct.length}</button>
+                <button type="button" class="cbg-btn sl ${state.vbRuleBucket === 'Block' ? 'active-err' : ''}" style="height:38px;font-size:14px" data-action="vb-bucket" data-arg="Block">Блок · ${state.customRules.Block.length}</button>
+              </div>
+
+              <div class="rule-chip-wrap" style="min-height:84px;align-content:flex-start">
+                ${bucketEntries.length ? bucketEntries.map(r => {
+                  const sp = splitRule(r);
+                  return `
+                    <span class="rule-chip">
+                      ${sp.prefix ? `<span class="rule-chip-prefix">${sp.prefix}</span>` : ''}
+                      <span class="mono" style="font-size:13px">${sp.body}</span>
+                      <button type="button" class="rule-chip-del sl" data-action="del-rule" data-arg="${state.vbRuleBucket}|${r}" aria-label="Удалить">${icon('close', 14)}</button>
+                    </span>
+                  `;
+                }).join('') : `<span style="font-size:14px;color:var(--on-surface-variant)">Список пуст — выберите строку в журнале слева</span>`}
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="vb-col-head">
+                <span class="vb-col-title" style="font-size:18px">TitleID Split Tunneling</span>
+                <span class="rec-badge ${state.showRecommended ? '' : 'hidden'}">Split Tunneling</span>
+              </div>
+              <div class="seg-list">
+                ${state.titleIds.map(t => `
+                  <div class="seg-item" style="padding:9px 14px">
+                    <div>
+                      <div class="seg-title" style="font-size:15.5px">${t.name}</div>
+                      <div class="seg-sub mono" style="font-size:12px">${t.tid}</div>
+                    </div>
+                    <div class="cbg" style="width:236px">
+                      <button type="button" class="cbg-btn sl ${t.mode === 'VPN' ? 'active' : ''}" style="height:32px;font-size:12.5px" data-action="set-tid" data-arg="${t.tid}|VPN">VPN</button>
+                      <button type="button" class="cbg-btn sl ${t.mode === 'Direct' ? 'active-sec' : ''}" style="height:32px;font-size:12.5px" data-action="set-tid" data-arg="${t.tid}|Direct">Напрямую</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Popover for QR Remote, SpeedTest, Sysmodule, GitHub Updates -->
+        <div class="vb-popover ${state.vbPopoverOpen ? 'open' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="vb-col-title">Пульт с телефона и диагностика</span>
+            <button type="button" class="sw-pill sl" style="height:32px" data-action="vb-toggle-pop">${icon('close', 16)} Закрыть</button>
+          </div>
+          <div style="display:flex;gap:14px;align-items:center;background:var(--surface-container);padding:12px;border-radius:20px">
+            ${renderQrSvg(92)}
+            <div>
+              <div class="seg-title" style="font-size:16px">yumi://remote</div>
+              <div class="seg-sub mono">http://192.168.1.42:7980</div>
+              <div class="seg-sub" style="margin-top:4px">Быстрый ввод правил и подписок со смартфона</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface-container);padding:12px 14px;border-radius:18px">
+            <div><div class="seg-title" style="font-size:15px">SpeedTest через туннель</div><div class="seg-sub tabular">${state.speedTesting ? 'Выполняется замер…' : state.speedTestResult}</div></div>
+            <button type="button" class="sw-pill accent sl" style="height:34px" data-action="run-speedtest">Тест</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface-container);padding:12px 14px;border-radius:18px">
+            <div><div class="seg-title" style="font-size:15px">Обновления GitHub</div><div class="seg-sub tabular">${state.updateStatus}</div></div>
+            <button type="button" class="sw-pill primary sl" style="height:34px" data-action="check-update">Проверить</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Overlay B (448x720 Expressive Drawer over YouTube)
+    document.getElementById('stage-b-ovl').innerHTML = `
+      <div class="yt-stage">
+        ${renderYoutubeBackdrop()}
+        <div class="ovl-slot">
+          <div class="ovl-b-wrap">
+            <div class="ovl-b-card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-family:YumiDisplay,sans-serif;font-size:20px">Yumi NX</span>
+                <span class="sw-pill tabular" style="height:30px;font-size:12.5px">RAM 3.4/5.5 MB</span>
+              </div>
+
+              <button type="button" class="hero-morph-btn sl ${state.tunnelOn ? 'connected' : ''}" data-action="toggle-tunnel">
+                <div style="display:flex;align-items:center;gap:12px;text-align:left">
+                  ${icon('power', 26)}
+                  <div>
+                    <div style="font-size:17px;font-weight:700">${state.tunnelOn ? 'Туннель активен' : 'Туннель отключён'}</div>
+                    <div style="font-size:13px;opacity:0.86">${state.tunnelOn ? `${srv.name} · ${srv.proto}` : 'Нажмите для запуска'}</div>
+                  </div>
+                </div>
+                <span class="tabular" style="font-size:15px;font-weight:700">${srv.ping} ms</span>
+              </button>
+
+              <!-- Mini Live Throughput Sparkline -->
+              <div class="spark-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px" class="tabular">
+                  <span style="color:var(--primary);font-weight:600">↓ ${state.tunnelOn ? '18.4 MB/s' : '0.0 KB/s'}</span>
+                  <span style="color:var(--tertiary);font-weight:600">↑ ${state.tunnelOn ? '1.2 MB/s' : '0.0 KB/s'}</span>
+                  <span style="color:var(--on-surface-variant)">YouTube TCP</span>
+                </div>
+                <svg viewBox="0 0 360 66" style="width:100%;height:66px;display:block">
+                  ${state.tunnelOn ? `
+                    <path d="M0 54 L24 44 L48 48 L72 30 L96 34 L120 22 L144 26 L168 15 L192 20 L216 14 L240 24 L264 16 L288 18 L312 11 L336 16 L360 12 L360 66 L0 66 Z" fill="var(--primary)" fill-opacity="0.18"/>
+                    <path d="M0 54 L24 44 L48 48 L72 30 L96 34 L120 22 L144 26 L168 15 L192 20 L216 14 L240 24 L264 16 L288 18 L312 11 L336 16 L360 12" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M0 58 L30 56 L60 52 L90 55 L120 49 L150 51 L180 46 L210 50 L240 48 L270 44 L300 47 L330 43 L360 45" fill="none" stroke="var(--tertiary)" stroke-width="2.5" stroke-linecap="round"/>
+                  ` : `
+                    <line x1="0" y1="56" x2="360" y2="56" stroke="var(--outline)" stroke-width="2" stroke-dasharray="6 6"/>
+                  `}
+                </svg>
+              </div>
+
+              <div>
+                <div style="font-size:13px;color:var(--on-surface-variant);margin-bottom:6px;font-weight:600">Маршрутизация</div>
+                ${routingCbgHtml()}
+              </div>
+
+              <div>
+                <div style="font-size:13px;color:var(--on-surface-variant);margin-bottom:6px;font-weight:600">Быстрые серверы</div>
+                <div class="srv-cluster">
+                  ${state.servers.map(s => `
+                    <button type="button" class="srv-tile sl ${state.activeServerId === s.id ? 'active' : ''}" data-action="set-server" data-arg="${s.id}">
+                      <span style="font-size:14.5px;font-weight:600">${s.short}</span>
+                      <span class="tabular" style="font-size:13px;font-weight:600;color:${getLatencyColor(s.ping)}">${s.ping} ms · ${s.proto.split(' ')[0]}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="ovl-foot" style="padding-top:0">
+                <span>HOS 20.0+ · yumi:ctl</span>
+                <span class="mono">L+↓+R3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================
+  // RENDER VARIANT C
+  // =========================================================
+  function renderVariantC() {
+    const srv = getActiveServer();
+    const isSimple = state.vcMode === 'Simple';
+    let bodyHtml = '';
+
+    if (isSimple) {
+      bodyHtml = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;color:var(--on-surface-variant)">
+          <span>Только главное простыми словами — остальное уже настроено оптимально.</span>
+          <button type="button" class="sw-pill sl ${state.showRecommended ? 'primary' : ''}" style="height:32px;font-size:13px" data-action="toggle-rec">Подсказки «Рекомендуется»: ${state.showRecommended ? 'Вкл' : 'Выкл'}</button>
+        </div>
+
+        <div class="vc-simple-grid">
+          <!-- Card 1: Smart Routing -->
+          <div class="vc-card">
+            <div class="vc-card-head">
+              <div style="display:flex;gap:12px">
+                <div class="vc-card-icon">${icon('shield', 22)}</div>
+                <div>
+                  <div class="seg-title-row"><span class="vc-card-title">Умный режим для YouTube и RU</span>${recBadgeHtml()}</div>
+                  <div class="vc-card-desc">Зарубежные сервисы и YouTube идут через VPN, российские сайты и локальная сеть — напрямую</div>
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--surface-container);padding:10px 14px;border-radius:16px;font-size:13px;color:var(--on-surface-variant);display:flex;justify-content:space-between">
+              <span>Активный профиль: <strong style="color:var(--on-surface)">${state.routingMode}</strong></span>
+              <span class="mono" style="color:var(--primary)">youtube.com -&gt; VPN · vk.com -&gt; Direct</span>
+            </div>
+            ${routingCbgHtml()}
+          </div>
+
+          <!-- Card 2: Block QUIC -->
+          <div class="vc-card">
+            <div class="vc-card-head">
+              <div style="display:flex;gap:12px;min-width:0">
+                <div class="vc-card-icon">${icon('spa', 22)}</div>
+                <div style="min-width:0">
+                  <div class="vc-card-title" style="font-size:18px">Блокировка QUIC (быстрый YouTube)</div>
+                  <div class="vc-card-desc">Отсекает UDP 443, чтобы плеер YouTube не зависал на первом кадре и не срывался в буфер</div>
+                </div>
+              </div>
+              ${switchHtml(state.blockQuic, 'toggle-quic')}
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              ${recBadgeHtml()}
+              <span class="sw-pill ${state.blockQuic ? 'tertiary' : ''}" style="height:32px;font-size:13px">${state.blockQuic ? 'UDP 443 блокируется -> быстрый TCP' : 'QUIC разрешён'}</span>
+              <button type="button" class="sw-pill sl ${state.dohResolve ? 'primary' : ''}" style="height:32px;font-size:13px" data-action="toggle-doh">DoH: ${state.dohResolve ? 'Вкл' : 'Выкл'}</button>
+            </div>
+          </div>
+
+          <!-- Card 3: Media TitleIDs -->
+          <div class="vc-card">
+            <div class="vc-card-head">
+              <div style="display:flex;gap:12px">
+                <div class="vc-card-icon">${icon('apps', 22)}</div>
+                <div>
+                  <div class="vc-card-title">Только медиа-приложения (TitleID)</div>
+                  <div class="vc-card-desc">Нажмите на приложение, чтобы переключить его маршрут</div>
+                </div>
+              </div>
+              <span class="sw-pill primary tabular" style="height:30px;font-size:12.5px">${state.titleIds.filter(t => t.mode === 'VPN').length} из ${state.titleIds.length} VPN</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              ${state.titleIds.map(t => `
+                <button type="button" class="sl" data-action="cycle-tid" data-arg="${t.tid}" style="background:var(--surface-container);border-radius:16px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="text-align:left;min-width:0">
+                    <div style="font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+                    <div class="mono" style="font-size:11.5px;color:var(--on-surface-variant)">${t.tid.slice(-6)}</div>
+                  </div>
+                  <span style="font-size:13px;font-weight:700;color:${t.mode === 'VPN' ? 'var(--primary)' : 'var(--tertiary)'}">${t.mode === 'VPN' ? 'VPN' : 'Напр.'}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Card 4: Autostart + Remote QR -->
+          <div class="vc-card">
+            <div class="vc-card-head">
+              <div style="display:flex;gap:12px">
+                <div class="vc-card-icon">${icon('qr', 22)}</div>
+                <div>
+                  <div class="seg-title-row"><span class="vc-card-title">Автозапуск + Пульт с телефона</span>${recBadgeHtml()}</div>
+                  <div class="vc-card-desc">Автоподключение при старте Switch и ввод подписок по yumi://remote</div>
+                </div>
+              </div>
+              ${switchHtml(state.autoStart, 'toggle-autostart')}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:var(--surface-container);padding:10px 14px;border-radius:18px">
+              ${renderQrSvg(54)}
+              <div style="flex:1">
+                <div class="mono" style="font-size:13.5px;color:var(--on-surface)">yumi://remote · 192.168.1.42:7980</div>
+                <div class="seg-sub" style="font-size:12.5px">Автозапуск: ${state.autoStart ? 'включён при старте HOS' : 'выключен'}</div>
+              </div>
+              <button type="button" class="sw-pill primary sl" style="height:34px;font-size:13px" data-action="vc-mode" data-arg="Expert">Под капотом ${icon('arrowR', 16)}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const fps = ['Auto', 'Chrome', 'Firefox', 'Safari'];
+      const frags = ['Off', 'TlsHello', 'TcpSegments'];
+      bodyHtml = `
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--on-surface-variant)">
+          <span>Полный список настроек: uTLS-отпечаток, фрагментация DPI, DoH, журнал соединений, CustomRules, SpeedTest и обновления GitHub.</span>
+          <button type="button" class="sw-pill sl ${state.showRecommended ? 'primary' : ''}" style="height:32px;font-size:13px" data-action="toggle-rec">Бейджи «Рекомендуется»</button>
+        </div>
+
+        <div class="vc-expert-grid">
+          <!-- Col 1: DPI, uTLS, Frag, DoH -->
+          <div class="vc-ex-col">
+            <div style="font-family:YumiDisplay,sans-serif;font-size:18px">Сеть, uTLS и DPI</div>
+            ${routingCbgHtml()}
+            <div style="background:var(--surface-container);padding:11px 13px;border-radius:18px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:7px">uTLS-отпечаток</div>
+              <div class="cbg">
+                ${fps.map(f => `<button type="button" class="cbg-btn sl ${state.tlsFingerprint === f ? 'active' : ''}" style="height:34px;font-size:12.5px;padding:0 6px" data-action="set-utls" data-arg="${f}">${f}</button>`).join('')}
+              </div>
+            </div>
+            <div style="background:var(--surface-container);padding:11px 13px;border-radius:18px">
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:600;margin-bottom:7px">
+                <span>Фрагментация</span><span class="mono" style="font-size:12px;color:var(--on-surface-variant)">20-50 · 2-5ms</span>
+              </div>
+              <div class="cbg">
+                ${frags.map(f => `<button type="button" class="cbg-btn sl ${state.fragmentMode === f ? 'active' : ''}" style="height:34px;font-size:12.5px;padding:0 6px" data-action="set-frag" data-arg="${f}">${f}</button>`).join('')}
+              </div>
+            </div>
+            <div class="seg-list" style="margin-top:auto">
+              <div class="seg-item" style="padding:9px 12px">
+                <div class="seg-title-row"><span style="font-size:14px;font-weight:600">Блокировка QUIC</span>${recBadgeHtml()}</div>
+                ${switchHtml(state.blockQuic, 'toggle-quic')}
+              </div>
+              <div class="seg-item" style="padding:9px 12px">
+                <div class="seg-title-row"><span style="font-size:14px;font-weight:600">DoH 1.1.1.1</span>${recBadgeHtml()}</div>
+                ${switchHtml(state.dohResolve, 'toggle-doh')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Col 2: CustomRules + Log + TitleID -->
+          <div class="vc-ex-col">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-family:YumiDisplay,sans-serif;font-size:18px">Журнал &amp; Свои правила</span>
+              <span class="sw-pill primary tabular" style="height:26px;font-size:12px">${state.customRules.Proxy.length + state.customRules.Direct.length + state.customRules.Block.length} правил</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              ${state.logs.slice(0, 4).map(l => `
+                <div style="background:var(--surface-container);border-radius:12px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="min-width:0;flex:1">
+                    <div class="mono" style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.host}:${l.port}</div>
+                    <div style="font-size:11.5px;color:var(--on-surface-variant)">${l.proto} · ${l.app} · ${l.badge}</div>
+                  </div>
+                  <button type="button" class="sw-pill sl primary" style="height:28px;font-size:12px;padding:0 10px" data-action="add-rule" data-arg="Proxy|${l.host}">+ VPN</button>
+                </div>
+              `).join('')}
+            </div>
+            <div style="font-size:14px;font-weight:600;margin-top:2px">TitleID Split Tunneling</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto">
+              ${state.titleIds.map(t => `
+                <button type="button" class="sl" data-action="cycle-tid" data-arg="${t.tid}" style="background:var(--surface-container);border-radius:12px;padding:8px 10px;text-align:left">
+                  <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+                  <div style="font-size:11.5px;color:${t.mode === 'VPN' ? 'var(--primary)' : 'var(--tertiary)'};font-weight:600">${t.mode === 'VPN' ? 'Через VPN' : 'Напрямую'}</div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Col 3: Sysmodule, SpeedTest, QR, GitHub -->
+          <div class="vc-ex-col">
+            <div style="font-family:YumiDisplay,sans-serif;font-size:18px">Система и пульт</div>
+            <div style="background:var(--surface-container);padding:12px;border-radius:18px;display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;font-size:13.5px" class="tabular"><span>Память HOS 20.0+</span><strong>3.4 / 5.5 MB</strong></div>
+              <div class="ram-track"><div class="ram-fill"></div></div>
+            </div>
+            <div style="background:var(--surface-container);padding:12px;border-radius:18px;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:14px;font-weight:600">SpeedTest</div><div class="tabular" style="font-size:13px;color:var(--primary)">${state.speedTesting ? 'Замер…' : state.speedTestResult}</div></div>
+              <button type="button" class="sw-pill accent sl" style="height:34px;font-size:12.5px" data-action="run-speedtest">Тест</button>
+            </div>
+            <div style="background:var(--surface-container);padding:11px;border-radius:18px;display:flex;align-items:center;gap:10px">
+              ${renderQrSvg(62)}
+              <div><div style="font-size:14px;font-weight:600">Пульт (QR)</div><div class="mono" style="font-size:11.5px;color:var(--on-surface-variant)">yumi://remote</div></div>
+            </div>
+            <div style="background:var(--surface-container);padding:12px;border-radius:18px;display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+              <div><div style="font-size:14px;font-weight:600">GitHub</div><div class="tabular" style="font-size:12.5px;color:var(--on-surface-variant)">${state.updateStatus}</div></div>
+              <button type="button" class="sw-pill primary sl" style="height:34px;font-size:12.5px" data-action="check-update">Обновить</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('stage-c-nro').innerHTML = `
+      <div class="sw-app">
+        <div class="sw-topbar">
+          <div class="sw-brand">
+            <div class="sw-logo">${icon('tune', 24)}</div>
+            <div>
+              <div class="sw-title">Yumi NX · Настройки</div>
+              <div class="sw-subtitle">Два режима · Yumi 2.3.3</div>
+            </div>
+          </div>
+
+          <div class="vc-mode-track">
+            <button type="button" class="vc-mode-btn sl ${isSimple ? 'active' : ''}" data-action="vc-mode" data-arg="Simple">${icon('spa', 18)} Налегке</button>
+            <button type="button" class="vc-mode-btn sl ${!isSimple ? 'active' : ''}" data-action="vc-mode" data-arg="Expert">${icon('tune', 18)} Под капотом</button>
+          </div>
+
+          <div class="sw-status-strip">
+            <button type="button" class="sw-pill sl ${state.tunnelOn ? 'primary' : 'warn'}" data-action="toggle-tunnel">
+              <span class="dot" style="background:${state.tunnelOn ? 'var(--latency-fast)' : 'var(--error)'}"></span>
+              <span class="tabular">${state.tunnelOn ? `${srv.short} · ${srv.ping} ms` : 'Откл.'}</span>
+            </button>
+            <span class="sw-pill tabular">3.4 / 5.5 MB</span>
+          </div>
+        </div>
+
+        ${bodyHtml}
+      </div>
+    `;
+
+    // Overlay C (Ultra-compact bottom-left island inside 448x720 slot over YouTube)
+    document.getElementById('stage-c-ovl').innerHTML = `
+      <div class="yt-stage">
+        ${renderYoutubeBackdrop()}
+        <div class="ovl-slot">
+          <div class="ovl-c-wrap">
+            <div class="ovl-c-clear-hint">
+              <span class="dot" style="background:var(--latency-fast)"></span>
+              <span>Верх экрана открыт для видео · Оверлей 448×720</span>
+            </div>
+
+            <div class="ovl-c-island">
+              <div class="ovl-c-top">
+                <div>
+                  <div style="font-family:YumiDisplay,sans-serif;font-size:19px">Yumi NX</div>
+                  <div class="tabular" style="font-size:12.5px;color:var(--on-surface-variant)">${state.tunnelOn ? `↓ 18.4 MB/s · 3.4/5.5 MB` : 'Пауза · 3.4/5.5 MB'}</div>
+                </div>
+                <button type="button" class="ovl-c-power sl ${state.tunnelOn ? 'on' : ''}" data-action="toggle-tunnel">
+                  ${icon('power', 18)}
+                  <span>${state.tunnelOn ? 'VPN Вкл' : 'VPN Выкл'}</span>
+                </button>
+              </div>
+
+              ${routingCbgHtml()}
+
+              <div class="srv-cluster">
+                ${state.servers.map(s => `
+                  <button type="button" class="srv-tile sl ${state.activeServerId === s.id ? 'active' : ''}" style="padding:8px 11px" data-action="set-server" data-arg="${s.id}">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="font-size:14px;font-weight:600">${s.short}</span>
+                      <span class="tabular" style="font-size:13px;font-weight:700;color:${getLatencyColor(s.ping)}">${s.ping} ms</span>
+                    </div>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPaletteStrip() {
+    document.getElementById('paletteStrip').innerHTML = PALETTES.map(p => `
+      <button type="button" class="pal-btn sl ${state.palette === p.id ? 'active' : ''}" data-action="set-palette" data-arg="${p.id}">
+        <span class="pal-dot" style="background:${p.dot}"></span>
+        <span>${p.label}</span>
+      </button>
+    `).join('');
+  }
+
+  function renderAll() {
+    applyTheme(state.palette, state.amoled);
+    renderPaletteStrip();
+
+    const amoledBtn = document.getElementById('amoledBtn');
+    amoledBtn.classList.toggle('active', state.amoled);
+
+    document.querySelectorAll('#viewGroup .view-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === state.view);
+    });
+
+    document.querySelectorAll('.variant-card').forEach(card => {
+      const v = card.dataset.variant;
+      const show = state.view === 'all' || state.view === v;
+      card.classList.toggle('hidden', !show);
+      const grid = card.querySelector('.stage-grid');
+      if (grid) grid.classList.toggle('single-focus', state.view !== 'all');
+    });
+
+    renderVariantA();
+    renderVariantB();
+    renderVariantC();
+    rescaleAllStages();
+  }
+
+  // Event Delegation across Toolbar + All 6 Switch Stages
+  document.addEventListener('click', e => {
+    const viewBtn = e.target.closest('[data-view]');
+    if (viewBtn) {
+      state.view = viewBtn.dataset.view;
+      renderAll();
+      return;
+    }
+    if (e.target.closest('#amoledBtn')) {
+      state.amoled = !state.amoled;
+      renderAll();
+      return;
+    }
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const act = el.dataset.action;
+    const arg = el.dataset.arg || '';
+
+    if (act === 'set-palette') state.palette = arg;
+    else if (act === 'toggle-tunnel') state.tunnelOn = !state.tunnelOn;
+    else if (act === 'set-routing') state.routingMode = arg;
+    else if (act === 'cycle-routing') {
+      const order = ['Global', 'Rules', 'Direct'];
+      state.routingMode = order[(order.indexOf(state.routingMode) + 1) % 3];
+    }
+    else if (act === 'set-server') state.activeServerId = arg;
+    else if (act === 'toggle-quic') state.blockQuic = !state.blockQuic;
+    else if (act === 'toggle-doh') state.dohResolve = !state.dohResolve;
+    else if (act === 'toggle-autostart') state.autoStart = !state.autoStart;
+    else if (act === 'toggle-rec') state.showRecommended = !state.showRecommended;
+    else if (act === 'set-utls') state.tlsFingerprint = arg;
+    else if (act === 'set-frag') state.fragmentMode = arg;
+    else if (act === 'va-cat') state.vaCategory = arg;
+    else if (act === 'vb-filter') state.vbLogFilter = arg;
+    else if (act === 'vb-select-log') state.vbSelectedLog = Number(arg);
+    else if (act === 'vb-bucket') state.vbRuleBucket = arg;
+    else if (act === 'vb-toggle-pop') state.vbPopoverOpen = !state.vbPopoverOpen;
+    else if (act === 'vc-mode') state.vcMode = arg;
+    else if (act === 'cycle-tid') {
+      const t = state.titleIds.find(x => x.tid === arg);
+      if (t) t.mode = t.mode === 'VPN' ? 'Direct' : 'VPN';
+    }
+    else if (act === 'set-tid') {
+      const [tid, mode] = arg.split('|');
+      const t = state.titleIds.find(x => x.tid === tid);
+      if (t) t.mode = mode;
+    }
+    else if (act === 'add-rule') {
+      e.stopPropagation();
+      const [action, host] = arg.split('|');
+      addCustomRule(action, host);
+    }
+    else if (act === 'del-rule') {
+      const [bucket, entry] = arg.split('|');
+      removeCustomRule(bucket, entry);
+    }
+    else if (act === 'run-speedtest') {
+      state.speedTesting = true;
+      renderAll();
+      setTimeout(() => {
+        state.speedTesting = false;
+        const mbps = (86 + Math.random() * 24).toFixed(1);
+        state.speedTestResult = `${mbps} Mbps · ${getActiveServer().ping} ms`;
+        renderAll();
+      }, 450);
+      return;
+    }
+    else if (act === 'check-update') {
+      state.updateStatus = 'v0.3.1 · Последний релиз';
+    }
+
+    renderAll();
+  });
+
+  // Responsive 1280x720 scaling via ResizeObserver
+  function rescaleAllStages() {
+    document.querySelectorAll('.stage-host').forEach(host => {
+      const stage = host.querySelector('.stage-1280');
+      if (!stage) return;
+      const w = host.clientWidth;
+      if (w > 0) {
+        const scale = w / 1280;
+        stage.style.transform = `scale(${scale})`;
+      }
+    });
+  }
+
+  const ro = new ResizeObserver(() => rescaleAllStages());
+  document.querySelectorAll('.stage-host').forEach(h => ro.observe(h));
+  window.addEventListener('resize', rescaleAllStages);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

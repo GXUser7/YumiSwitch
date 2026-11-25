@@ -1,0 +1,26 @@
+# Build outputs
+build/
+sd_out/
+run_config/
+exefs/
+*.o
+*.d
+*.a
+*.elf
+*.nro
+*.nso
+*.npdm
+*.nsp
+*.ovl
+*.exe
+*.nacp
+*.map
+*.lst
+*.zip
+*.part
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

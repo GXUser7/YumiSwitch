@@ -1,0 +1,3050 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yumi NX · Серверы, Подписки и QR-приём (M3 Expressive)</title>
+<style>
+@font-face {
+  font-family: 'YumiDisplay';
+  src: url('../app/romfs/fonts/roboto_flex_display.ttf') format('truetype');
+  font-weight: 400 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'YumiSemibold';
+  src: url('../app/romfs/fonts/roboto_flex_semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'YumiMedium';
+  src: url('../app/romfs/fonts/roboto_flex_medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'YumiRegular';
+  src: url('../app/romfs/fonts/roboto_flex_regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'YumiMono';
+  src: url('../app/romfs/fonts/roboto_mono_medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  /* Yumi Glacier Dark (Default, Color.kt exact tokens) */
+  --surface: #090B0F;
+  --background: #090B0F;
+  --surface-lowest: #05070A;
+  --surface-low: #0F131A;
+  --surface-container: #151A22;
+  --surface-high: #1C222C;
+  --surface-highest: #232A35;
+  --surface-variant: #29313D;
+
+  --primary: #A8C7FF;
+  --on-primary: #07203F;
+  --primary-container: #24314A;
+  --on-primary-container: #D5E3FF;
+
+  --secondary: #F0BE73;
+  --on-secondary: #402B08;
+  --secondary-container: #5A4118;
+  --on-secondary-container: #FFDEB0;
+
+  --tertiary: #8FD6C0;
+  --on-tertiary: #00382A;
+  --tertiary-container: #06503C;
+  --on-tertiary-container: #A9F2DC;
+
+  --error: #FF9885;
+  --on-error: #5C1508;
+  --error-container: #7E2415;
+  --on-error-container: #FFDAD3;
+
+  --on-surface: #E7ECF4;
+  --on-surface-variant: #9AA5B6;
+  --outline: #4E5867;
+  --outline-variant: #29313D;
+
+  /* Fixed semantic latency scale (never repainted by palette) */
+  --latency-fast: #7EE0A8;
+  --latency-medium: #F0BE73;
+  --latency-slow: #FF9885;
+  --latency-dead: #7A8496;
+
+  /* M3 Expressive motion curves */
+  --spring-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+  --spring-effects: cubic-bezier(0.34, 0.80, 0.34, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--surface-lowest);
+  color: var(--on-surface);
+  font-family: 'YumiRegular', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+.num, .mono {
+  font-family: 'YumiMono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.ico {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* Interactive state-layer & button primitives (Zero 1px borders) */
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+button:focus-visible {
+  outline: 2.5px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.stateful {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 240ms var(--spring-spatial),
+    border-radius 240ms var(--spring-spatial),
+    background-color 180ms var(--spring-effects),
+    color 180ms var(--spring-effects);
+}
+
+.stateful::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms var(--spring-effects);
+}
+
+.stateful:hover::before {
+  opacity: 0.08;
+}
+
+.stateful:active::before {
+  opacity: 0.12;
+}
+
+.btn-pill {
+  height: 44px;
+  min-width: 44px;
+  border-radius: 9999px;
+  padding-inline: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.btn-pill:has(> svg:first-child),
+.btn-pill:has(> .kcap:first-child) {
+  padding-inline: 16px 22px;
+}
+
+.btn-pill:active {
+  border-radius: 14px;
+  transform: scale(0.97);
+}
+
+.btn-pill.lg {
+  height: 50px;
+  font-size: 15px;
+  padding-inline: 24px;
+}
+
+.btn-pill.lg:active {
+  border-radius: 18px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-tonal {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.btn-surface {
+  background: var(--surface-highest);
+  color: var(--on-surface);
+}
+
+.btn-outlined {
+  background: transparent;
+  color: var(--on-surface);
+  border: 1.5px solid var(--outline);
+}
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:active {
+  border-radius: 10px;
+  transform: scale(0.94);
+}
+
+.btn-icon.danger {
+  color: var(--error);
+}
+
+/* Connected Button Group (22px/8px/9999px active morph) */
+.connected-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  padding: 0;
+}
+
+.connected-group .seg-btn {
+  height: 38px;
+  padding: 0 15px;
+  background: var(--surface-high);
+  color: var(--on-surface-variant);
+  font-family: 'YumiMedium', sans-serif;
+  font-size: 13px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.connected-group .seg-btn:first-child {
+  border-radius: 20px 8px 8px 20px;
+}
+
+.connected-group .seg-btn:last-child {
+  border-radius: 8px 20px 20px 8px;
+}
+
+.connected-group .seg-btn.active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: 'YumiSemibold', sans-serif;
+  border-radius: 9999px;
+}
+
+.connected-group .seg-btn:active {
+  border-radius: 10px;
+}
+
+.connected-group.compact .seg-btn {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+/* Joy-Con keycaps */
+.kcap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.btn-primary .kcap {
+  background: rgba(7, 32, 63, 0.22);
+  color: var(--on-primary);
+}
+
+.btn-tonal .kcap {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--on-primary-container);
+}
+
+/* Country 2-letter crisp badge (no emojis) */
+.cc-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font-family: 'YumiMono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cc-badge.lg {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  font-size: 16px;
+}
+
+.cc-badge.sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 11.5px;
+}
+
+/* Segmented stack 28/8/4px */
+.seg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  padding: 0;
+}
+
+.seg-stack > .seg-item {
+  border-radius: 8px;
+}
+
+.seg-stack > .seg-item:first-child {
+  border-radius: 26px 26px 8px 8px;
+}
+
+.seg-stack > .seg-item:last-child {
+  border-radius: 8px 8px 26px 26px;
+}
+
+.seg-stack > .seg-item:only-child {
+  border-radius: 26px;
+}
+
+/* Switch toggle pill (M3) */
+.m3-switch {
+  width: 52px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--surface-highest);
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 200ms var(--spring-effects);
+  flex-shrink: 0;
+}
+
+.m3-switch .thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--on-surface-variant);
+  transform: translateX(2px);
+  transition: transform 240ms var(--spring-spatial), width 200ms var(--spring-spatial), height 200ms var(--spring-spatial), background-color 180ms var(--spring-effects);
+}
+
+.m3-switch.on {
+  background: var(--primary);
+}
+
+.m3-switch.on .thumb {
+  width: 24px;
+  height: 24px;
+  background: var(--on-primary);
+  transform: translateX(20px);
+}
+
+/* ── Outer Showcase Layout ────────────────────────────────────────────────── */
+.showcase-wrap {
+  max-width: 1072px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+}
+
+.showcase-bar {
+  position: sticky;
+  top: 10px;
+  z-index: 60;
+  background: var(--surface-container);
+  border-radius: 26px;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+.brand-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-title {
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.palette-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-low);
+  padding: 4px;
+  border-radius: 9999px;
+}
+
+.pal-btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'YumiMedium', sans-serif;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.pal-btn.active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: 'YumiSemibold', sans-serif;
+}
+
+.pal-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.amoled-btn {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: var(--surface-high);
+  color: var(--on-surface-variant);
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.amoled-btn.active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.variant-section {
+  background: var(--surface-low);
+  border-radius: 30px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.variant-section.hidden {
+  display: none;
+}
+
+.variant-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.variant-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.v-badge {
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.v-name {
+  margin: 0;
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 18px;
+  letter-spacing: -0.015em;
+}
+
+.v-tag {
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  font-family: 'YumiMedium', sans-serif;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.v-desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
+  max-width: 780px;
+}
+
+.stage-host {
+  width: 100%;
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.50);
+}
+
+.switch-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+  background: var(--surface);
+  color: var(--on-surface);
+  overflow: hidden;
+  user-select: none;
+}
+
+.tradeoffs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tradeoff-pill {
+  border-radius: 16px;
+  padding: 7px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.tradeoff-pill.pro {
+  background: var(--surface-container);
+  color: var(--on-surface);
+}
+
+.tradeoff-pill.con {
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+}
+
+.tradeoff-mark {
+  font-family: 'YumiMono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tradeoff-pill.pro .tradeoff-mark {
+  color: var(--latency-fast);
+}
+
+.tradeoff-pill.con .tradeoff-mark {
+  color: var(--secondary);
+}
+
+.rec-card {
+  margin-top: 14px;
+  background: var(--surface-container);
+  border-radius: 28px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.rec-card .btn-pill {
+  flex-shrink: 0;
+}
+
+.rec-title {
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 16px;
+  color: var(--primary);
+  margin: 0 0 4px;
+}
+
+.rec-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--on-surface-variant);
+}
+
+/* ── Shared Switch Internal UI Primitives ────────────────────────────────── */
+.stage-toast {
+  position: absolute;
+  left: 28px;
+  bottom: 22px;
+  z-index: 40;
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  border-radius: 9999px;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'YumiMedium', sans-serif;
+  font-size: 13.5px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  pointer-events: none;
+  transition: opacity 200ms var(--spring-effects), transform 260ms var(--spring-spatial);
+}
+
+.stage-toast.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--primary);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.38); opacity: 0.55; }
+}
+
+.spin {
+  animation: spinAnim 0.85s linear infinite;
+}
+
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.qr-plate {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 0;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qr-plate svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.traffic-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--surface-lowest);
+  overflow: hidden;
+}
+
+.traffic-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--primary);
+  transition: width 360ms var(--spring-spatial);
+}
+
+.crypto-badge {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  font-family: 'YumiMono', monospace;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* ── VARIANT A: TV Grid 2x3 + Right Rail + Side QR ────────────────────────── */
+.va-layout {
+  width: 1280px;
+  height: 720px;
+  display: flex;
+  background: var(--surface);
+}
+
+.va-main {
+  flex: 1;
+  min-width: 0;
+  padding: 26px 14px 22px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.va-rail {
+  width: 120px;
+  margin: 24px 24px 24px 10px;
+  border-radius: 9999px;
+  background: var(--surface-container);
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.va-rail-btn {
+  width: 98px;
+  padding: 10px 4px;
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--on-surface-variant);
+}
+
+.va-rail-pill {
+  width: 72px;
+  height: 44px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 220ms var(--spring-effects), transform 260ms var(--spring-spatial);
+}
+
+.va-rail-btn.active {
+  color: var(--on-primary-container);
+}
+
+.va-rail-btn.active .va-rail-pill {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.va-rail-label {
+  font-family: 'YumiMedium', sans-serif;
+  font-size: 11.5px;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.va-rail-btn.active .va-rail-label {
+  font-family: 'YumiSemibold', sans-serif;
+  color: var(--on-surface);
+}
+
+.va-header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.va-h1 {
+  margin: 0;
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.va-sub {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--on-surface-variant);
+}
+
+.va-grid-wrap {
+  flex: 1;
+  margin-top: 12px;
+  overflow-y: auto;
+  padding: 6px;
+  min-height: 0;
+}
+
+.va-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 154px;
+  gap: 14px;
+}
+
+.va-srv-card {
+  border-radius: 28px;
+  background: var(--surface-high);
+  padding: 0 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+}
+
+.va-srv-card.is-selected {
+  background: var(--surface-highest);
+  border: 3px solid var(--primary);
+}
+
+.va-srv-card.is-focused {
+  background: var(--primary-container);
+  border: 3px solid var(--primary);
+  transform: scale(1.018);
+}
+
+.va-srv-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.va-srv-name {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 19px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.va-srv-card.is-focused .va-srv-name {
+  color: var(--on-primary-container);
+}
+
+.va-state-pill {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.va-state-pill.live {
+  background: rgba(168, 199, 255, 0.16);
+  color: var(--primary);
+}
+
+.va-state-pill.selected {
+  background: var(--surface-container);
+  color: var(--primary);
+}
+
+.va-state-pill.focus {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.va-srv-bot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.va-srv-meta {
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.va-srv-card.is-focused .va-srv-meta {
+  color: var(--on-primary-container);
+  opacity: 0.85;
+}
+
+.va-srv-ping {
+  font-family: 'YumiMono', monospace;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.va-footer {
+  height: 40px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.va-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--on-surface-variant);
+}
+
+.leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.leg-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+}
+
+.leg-swatch.focus {
+  background: var(--primary-container);
+  border: 2.5px solid var(--primary);
+}
+
+.leg-swatch.sel {
+  background: var(--surface-highest);
+  border: 2.5px solid var(--primary);
+}
+
+.va-subs-grid {
+  flex: 1;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1.14fr 0.86fr;
+  gap: 18px;
+  min-height: 0;
+}
+
+.va-subs-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 0;
+}
+
+.va-subs-scroll {
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.va-sub-row {
+  background: var(--surface-high);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 124px;
+}
+
+.va-sub-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.va-sub-title {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 17.5px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.va-sub-url {
+  font-family: 'YumiMono', monospace;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.va-sub-stats {
+  font-size: 12.5px;
+  color: var(--on-surface-variant);
+}
+
+.va-qr-card {
+  background: var(--surface-high);
+  border-radius: 28px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.va-qr-center {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.va-qr-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── VARIANT B: Master-Detail Inspector + Step QR Wizard ─────────────────── */
+.vb-layout {
+  width: 1280px;
+  height: 720px;
+  padding: 22px 26px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.vb-topbar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.vb-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vb-logo-pill {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-live-chip {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: var(--surface-container);
+  color: var(--on-surface);
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-filter-bar {
+  height: 40px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.vb-split {
+  flex: 1;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  gap: 18px;
+  min-height: 0;
+}
+
+.vb-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.vb-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.vb-srv-row {
+  background: var(--surface-high);
+  padding: 12px 16px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 3px solid transparent;
+}
+
+.vb-srv-row.selected {
+  background: var(--primary-container);
+  border: 3px solid var(--primary);
+}
+
+.vb-srv-row.selected .vb-row-name {
+  color: var(--on-primary-container);
+}
+
+.vb-srv-row.selected .vb-row-sub {
+  color: var(--on-primary-container);
+  opacity: 0.82;
+}
+
+.vb-row-mid {
+  flex: 1;
+  min-width: 0;
+}
+
+.vb-row-name {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 15.5px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vb-row-sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--on-surface-variant);
+}
+
+.vb-row-ping {
+  font-family: 'YumiMono', monospace;
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.vb-inspector {
+  background: var(--surface-high);
+  border-radius: 28px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.vb-insp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vb-insp-title {
+  margin: 0;
+  font-family: 'YumiDisplay', sans-serif;
+  font-size: 25px;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.vb-insp-sub {
+  margin-top: 5px;
+  font-size: 13.5px;
+  color: var(--on-surface-variant);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-ping-box {
+  background: var(--surface-container);
+  border-radius: 18px;
+  padding: 10px 16px;
+  text-align: right;
+  min-width: 126px;
+}
+
+.vb-ping-big {
+  font-family: 'YumiMono', monospace;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.vb-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.vb-spec-cell {
+  background: var(--surface-container);
+  padding: 15px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vb-spec-cell:nth-child(1) { border-radius: 20px 8px 8px 8px; }
+.vb-spec-cell:nth-child(2) { border-radius: 8px 20px 8px 8px; }
+.vb-spec-cell:nth-child(3) { border-radius: 8px 8px 8px 20px; }
+.vb-spec-cell:nth-child(4) { border-radius: 8px 8px 20px 8px; }
+
+.vb-spec-k {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.vb-spec-v {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 15.5px;
+  color: var(--on-surface);
+}
+
+.vb-qr-wizard {
+  background: var(--surface-high);
+  border-radius: 28px;
+  padding: 24px 26px;
+  display: grid;
+  grid-template-columns: 1fr 246px;
+  gap: 24px;
+  align-items: center;
+}
+
+.vb-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.vb-step {
+  background: var(--surface-container);
+  border-radius: 14px;
+  padding: 9px 13px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 13px;
+  color: var(--on-surface);
+}
+
+.vb-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: 'YumiMono', monospace;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── VARIANT C: Collapsible Clusters + Bento + Modal QR Island ───────────── */
+.vc-layout {
+  width: 1280px;
+  height: 720px;
+  padding: 20px 26px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.vc-capsule-bar {
+  height: 58px;
+  border-radius: 9999px;
+  background: var(--surface-container);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.vc-filter-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vc-clusters-scroll {
+  flex: 1;
+  margin-top: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.vc-group-head {
+  height: 46px;
+  width: 100%;
+  border-radius: 20px;
+  background: var(--surface-high);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vc-group-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vc-group-title {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 16px;
+  color: var(--on-surface);
+}
+
+.vc-group-meta {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+
+.vc-srv-row {
+  height: 54px;
+  width: 100%;
+  background: var(--surface-container);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 2.5px solid transparent;
+}
+
+.vc-srv-row.selected {
+  background: var(--surface-highest);
+  border: 2.5px solid var(--primary);
+}
+
+.vc-srv-row.live {
+  background: var(--primary-container);
+}
+
+.vc-srv-name {
+  font-family: 'YumiSemibold', sans-serif;
+  font-size: 15px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vc-proto-chip {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--surface-high);
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.vc-srv-row.live .vc-proto-chip {
+  background: rgba(7, 32, 63, 0.25);
+  color: var(--on-primary-container);
+}
+
+.vc-bento-grid {
+  flex: 1;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-content: start;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.vc-bento-card {
+  background: var(--surface-high);
+  border-radius: 28px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vc-sd-strip {
+  margin-top: 12px;
+  height: 62px;
+  border-radius: 24px;
+  background: var(--surface-container);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.vc-modal-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(5, 7, 10, 0.80);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-modal-scrim.open {
+  display: flex;
+}
+
+.vc-modal-island {
+  width: 780px;
+  border-radius: 32px;
+  background: var(--surface-high);
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 1fr 248px;
+  gap: 28px;
+  align-items: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+  animation: modalPop 260ms var(--spring-spatial);
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .tradeoffs, .rec-card {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="showcase-wrap">
+  <!-- Top Sticky Showcase Toolbar -->
+  <header class="showcase-bar">
+    <div class="brand-block">
+      <div class="brand-title">
+        <svg class="ico" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91c4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 4.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 0 1 0-5zm0 11.4c-2.08 0-3.91-1.06-4.98-2.67c.03-1.65 3.32-2.55 4.98-2.55s4.95.9 4.98 2.55A5.98 5.98 0 0 1 12 17.9z"/></svg>
+        <span>Yumi NX · Серверы, Подписки и QR-приём</span>
+      </div>
+      <div class="brand-sub">3 концепции под Nintendo Switch (1280×720) · M3 Expressive · Токены Yumi v2.3.3</div>
+    </div>
+
+    <div class="toolbar-controls">
+      <div class="palette-row" id="palette-switcher" role="group" aria-label="Палитра Yumi"></div>
+
+      <button class="amoled-btn stateful" id="amoled-toggle" type="button">
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26a5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        <span>AMOLED</span>
+      </button>
+
+      <div class="connected-group compact" id="view-filter" role="group" aria-label="Фильтр вариантов">
+        <button class="seg-btn stateful active" data-view="all" type="button">Все 3</button>
+        <button class="seg-btn stateful" data-view="A" type="button">A</button>
+        <button class="seg-btn stateful" data-view="B" type="button">B</button>
+        <button class="seg-btn stateful" data-view="C" type="button">C</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="variants-list" id="variants-list">
+    <!-- Variant A -->
+    <section class="variant-section" data-variant-card="A">
+      <div class="variant-head">
+        <div>
+          <div class="variant-title-row">
+            <span class="v-badge">Вариант A</span>
+            <h2 class="v-name">Сетка TV 2×3 + Боковая зона QR</h2>
+            <span class="v-tag">Крупная 2-колоночная сетка · Точный шаг D-pad</span>
+          </div>
+          <p class="v-desc">Адаптация Yumi TV: 3 целых ряда × 2 колонки с мгновенным различием фокуса D-pad, выбранного и живого узла. На вкладке подписок QR-приём с телефона закреплён справа рядом со стеком.</p>
+        </div>
+        <div class="connected-group compact" data-sync-screen="A">
+          <button class="seg-btn stateful active" data-go-screen="servers" type="button">Серверы</button>
+          <button class="seg-btn stateful" data-go-screen="subs" type="button">Подписки и QR</button>
+        </div>
+      </div>
+
+      <div class="stage-host">
+        <div class="switch-stage" id="stage-A"></div>
+      </div>
+
+      <div class="tradeoffs">
+        <div class="tradeoff-pill pro"><span class="tradeoff-mark">+</span><span>Максимальная читаемость в доке и портативе, 100% преемственность логики Yumi TV и чёткие 3 состояния карточки.</span></div>
+        <div class="tradeoff-pill con"><span class="tradeoff-mark">-</span><span>На одном экране умещается 6 узлов: при 50+ серверах приходится чаще фильтровать протоколом или листать.</span></div>
+      </div>
+    </section>
+
+    <!-- Variant B -->
+    <section class="variant-section" data-variant-card="B">
+      <div class="variant-head">
+        <div>
+          <div class="variant-title-row">
+            <span class="v-badge">Вариант B</span>
+            <h2 class="v-name">Мастер-деталь под Joy-Con</h2>
+            <span class="v-tag">Две зоны: быстрый список + инспектор / QR-мастер</span>
+          </div>
+          <p class="v-desc">Левая панель 42% под плотный сегментированный список серверов или подписок, правая 58% под живой инспектор параметров (SNI, uTLS, транспорт) или пошаговый мастер QR-приёма.</p>
+        </div>
+        <div class="connected-group compact" data-sync-screen="B">
+          <button class="seg-btn stateful" data-go-screen="servers" type="button">Серверы</button>
+          <button class="seg-btn stateful active" data-go-screen="subs" type="button">Подписки и QR</button>
+        </div>
+      </div>
+
+      <div class="stage-host">
+        <div class="switch-stage" id="stage-B"></div>
+      </div>
+
+      <div class="tradeoffs">
+        <div class="tradeoff-pill pro"><span class="tradeoff-mark">+</span><span>Полный стек протокола (REALITY, Vision, SNI, uTLS) и 3-шаговая инструкция QR видны сразу без диалогов.</span></div>
+        <div class="tradeoff-pill con"><span class="tradeoff-mark">-</span><span>Узкая левая колонка быстрее обрезает длинные названия узлов и требует переключения фокуса между панелями.</span></div>
+      </div>
+    </section>
+
+    <!-- Variant C -->
+    <section class="variant-section" data-variant-card="C">
+      <div class="variant-head">
+        <div>
+          <div class="variant-title-row">
+            <span class="v-badge">Вариант C</span>
+            <h2 class="v-name">Капсульные кластеры + Модальный QR-остров</h2>
+            <span class="v-tag">Группировка по подпискам + L/R фильтры</span>
+          </div>
+          <p class="v-desc">Верхняя капсула управления с L/R фильтрами, сортировкой по пингу и кнопкой Y для вызова модального QR-острова из любого места. Серверы сгруппированы в сворачиваемые кластеры подписок.</p>
+        </div>
+        <div class="connected-group compact" data-sync-screen="C">
+          <button class="seg-btn stateful active" data-go-screen="servers" type="button">Серверы</button>
+          <button class="seg-btn stateful" data-go-screen="subs" type="button">Подписки и QR</button>
+        </div>
+      </div>
+
+      <div class="stage-host">
+        <div class="switch-stage" id="stage-C"></div>
+      </div>
+
+      <div class="tradeoffs">
+        <div class="tradeoff-pill pro"><span class="tradeoff-mark">+</span><span>Единственная раскладка, где 20–100+ серверов из нескольких подписок сканируются и сворачиваются мгновенно.</span></div>
+        <div class="tradeoff-pill con"><span class="tradeoff-mark">-</span><span>Плотные строки (54 px) хуже читаются с большого ТВ издалека, а QR-код открывается только поверх экрана по кнопке Y.</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rec-card">
+    <div>
+      <h3 class="rec-title">Рекомендация для Yumi NX (NanoVG + Yoga, 1280×720)</h3>
+      <p class="rec-text">Для релиза v0.1 оптимален <strong>Вариант A</strong> на базе <code>TvScreens.kt</code> (крупные 2×3 карточки в портативе и доке + всегда доступный правый QR-приём), а из <strong>Варианта C</strong> стоит забрать быструю сортировку по пингу и L/R-фильтры протоколов, когда у пользователя больше 12 узлов. Вся раскладка ложится на Yoga flex без тяжёлых таблиц.</p>
+    </div>
+    <button class="btn-pill btn-tonal stateful" id="btn-reset-all" type="button">
+      <svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      <span>Сбросить демо</span>
+    </button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── 1. Yumi Palettes (Exact Palettes.kt formulas + Glacier Dark) ───────── */
+  const PALETTES = [
+    { id: "Glacier", label: "Glacier", hue: null, partner: 0, swatch: "#A8C7FF" },
+    { id: "Rose",    label: "Rose",    hue: 344,  partner: 186, swatch: "hsl(344,55%,80%)" },
+    { id: "Lilac",   label: "Lilac",   hue: 268,  partner: 160, swatch: "hsl(268,55%,80%)" },
+    { id: "Mint",    label: "Mint",    hue: 158,  partner: 28,  swatch: "hsl(158,55%,80%)" },
+    { id: "Peach",   label: "Peach",   hue: 22,   partner: 194, swatch: "hsl(22,55%,80%)" },
+    { id: "Sand",    label: "Sand",    hue: 44,   partner: 210, swatch: "hsl(44,55%,80%)" },
+    { id: "Sea",     label: "Sea",     hue: 196,  partner: 32,  swatch: "hsl(196,55%,80%)" }
+  ];
+
+  const GLACIER_DARK = {
+    "--surface": "#090B0F",
+    "--background": "#090B0F",
+    "--surface-lowest": "#05070A",
+    "--surface-low": "#0F131A",
+    "--surface-container": "#151A22",
+    "--surface-high": "#1C222C",
+    "--surface-highest": "#232A35",
+    "--surface-variant": "#29313D",
+    "--primary": "#A8C7FF",
+    "--on-primary": "#07203F",
+    "--primary-container": "#24314A",
+    "--on-primary-container": "#D5E3FF",
+    "--secondary": "#F0BE73",
+    "--on-secondary": "#402B08",
+    "--secondary-container": "#5A4118",
+    "--on-secondary-container": "#FFDEB0",
+    "--tertiary": "#8FD6C0",
+    "--on-tertiary": "#00382A",
+    "--tertiary-container": "#06503C",
+    "--on-tertiary-container": "#A9F2DC",
+    "--error": "#FF9885",
+    "--on-error": "#5C1508",
+    "--error-container": "#7E2415",
+    "--on-error-container": "#FFDAD3",
+    "--on-surface": "#E7ECF4",
+    "--on-surface-variant": "#9AA5B6",
+    "--outline": "#4E5867",
+    "--outline-variant": "#29313D"
+  };
+
+  function hsl(h, s, l) {
+    return "hsl(" + Math.round(h) + ", " + Math.round(s) + "%, " + l.toFixed(1) + "%)";
+  }
+
+  function buildTokens(pal, amoled) {
+    let vars;
+    if (pal.hue === null) {
+      vars = Object.assign({}, GLACIER_DARK);
+      if (amoled) {
+        vars["--background"] = "#000000";
+        vars["--surface"] = "#000000";
+        vars["--surface-lowest"] = "#000000";
+        vars["--surface-low"] = "#0A0A0C";
+        vars["--surface-container"] = "#121215";
+        vars["--surface-high"] = "#1B1B1F";
+        vars["--surface-highest"] = "#242429";
+      }
+      return vars;
+    }
+
+    const h = pal.hue;
+    const second = (h + 26) % 360;
+    const partner = pal.partner;
+    vars = Object.assign({}, GLACIER_DARK, {
+      "--primary": hsl(h, 55, 80),
+      "--on-primary": hsl(h, 72, 13),
+      "--primary-container": hsl(h, 30, 25),
+      "--on-primary-container": hsl(h, 62, 90),
+
+      "--secondary": hsl(second, 52, 76),
+      "--on-secondary": hsl(second, 80, 13),
+      "--secondary-container": hsl(second, 30, 27),
+      "--on-secondary-container": hsl(second, 70, 88),
+
+      "--tertiary": hsl(partner, 42, 70),
+      "--on-tertiary": hsl(partner, 85, 11),
+      "--tertiary-container": hsl(partner, 60, 17),
+      "--on-tertiary-container": hsl(partner, 66, 80),
+
+      "--background": amoled ? "#000000" : hsl(h, 34, 5.5),
+      "--surface": amoled ? "#000000" : hsl(h, 34, 5.5),
+      "--surface-lowest": amoled ? "#000000" : hsl(h, 40, 3.2),
+      "--surface-low": amoled ? hsl(h, 24, 4.2) : hsl(h, 32, 8.5),
+      "--surface-container": amoled ? hsl(h, 22, 7.2) : hsl(h, 30, 11.5),
+      "--surface-high": amoled ? hsl(h, 20, 10.8) : hsl(h, 28, 15.0),
+      "--surface-highest": amoled ? hsl(h, 18, 14.5) : hsl(h, 26, 19.0),
+      "--surface-variant": hsl(h, 26, 21.0),
+      "--outline": hsl(h, 18, 38.0),
+      "--outline-variant": hsl(h, 24, 22.0),
+      "--on-surface": hsl(h, 40, 93.0),
+      "--on-surface-variant": hsl(h, 20, 68.0)
+    });
+    return vars;
+  }
+
+  let currentPalette = "Glacier";
+  let isAmoled = false;
+
+  function applyTheme() {
+    const pal = PALETTES.find(p => p.id === currentPalette) || PALETTES[0];
+    const tokens = buildTokens(pal, isAmoled);
+    const root = document.documentElement;
+    for (const [k, v] of Object.entries(tokens)) {
+      root.style.setProperty(k, v);
+    }
+    document.querySelectorAll("#palette-switcher .pal-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.pal === currentPalette);
+    });
+    const amBtn = document.getElementById("amoled-toggle");
+    if (amBtn) amBtn.classList.toggle("active", isAmoled);
+  }
+
+  /* ── 2. Real ISO/IEC 18004 QR Version 4-M (33x33) SVG Generator ─────────── */
+  const GF_EXP = new Uint8Array(512);
+  const GF_LOG = new Uint8Array(256);
+  (function initGF() {
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      GF_EXP[i] = x;
+      GF_EXP[i + 255] = x;
+      GF_LOG[x] = i;
+      x <<= 1;
+      if (x & 0x100) x ^= 0x11d;
+    }
+  })();
+
+  function gfMul(a, b) {
+    return (a === 0 || b === 0) ? 0 : GF_EXP[GF_LOG[a] + GF_LOG[b]];
+  }
+
+  function rsEncode(data, ecLen) {
+    let gen = [1];
+    for (let i = 0; i < ecLen; i++) {
+      const nxt = new Array(gen.length + 1).fill(0);
+      const root = GF_EXP[i];
+      for (let j = 0; j < gen.length; j++) {
+        nxt[j] ^= gen[j];
+        nxt[j + 1] ^= gfMul(gen[j], root);
+      }
+      gen = nxt;
+    }
+    const res = new Uint8Array(data.length + ecLen);
+    res.set(data);
+    for (let i = 0; i < data.length; i++) {
+      const coef = res[i];
+      if (coef !== 0) {
+        for (let j = 0; j < gen.length; j++) res[i + j] ^= gfMul(gen[j], coef);
+      }
+    }
+    return Array.from(res.slice(data.length));
+  }
+
+  function buildQrMatrixV4M(text) {
+    const N = 33;
+    const bytes = new TextEncoder().encode(text.slice(0, 62));
+    const bits = [];
+    const pushBits = (val, len) => {
+      for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1);
+    };
+    pushBits(0b0100, 4); // Byte mode
+    pushBits(bytes.length, 8);
+    for (const b of bytes) pushBits(b, 8);
+    const totalDataBits = 64 * 8;
+    pushBits(0, Math.min(4, totalDataBits - bits.length));
+    while (bits.length % 8 !== 0) bits.push(0);
+    const pads = [0xec, 0x11];
+    let pi = 0;
+    while (bits.length < totalDataBits) {
+      pushBits(pads[pi++ & 1], 8);
+    }
+
+    const codewords = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      let cw = 0;
+      for (let j = 0; j < 8; j++) cw = (cw << 1) | bits[i + j];
+      codewords.push(cw);
+    }
+
+    // Version 4-M: 2 blocks of (32 data + 18 EC)
+    const b1 = codewords.slice(0, 32);
+    const b2 = codewords.slice(32, 64);
+    const ec1 = rsEncode(b1, 18);
+    const ec2 = rsEncode(b2, 18);
+    const stream = [];
+    for (let i = 0; i < 32; i++) stream.push(b1[i], b2[i]);
+    for (let i = 0; i < 18; i++) stream.push(ec1[i], ec2[i]);
+
+    const streamBits = [];
+    for (const cw of stream) {
+      for (let b = 7; b >= 0; b--) streamBits.push((cw >> b) & 1);
+    }
+    for (let r = 0; r < 7; r++) streamBits.push(0);
+
+    const grid = Array.from({ length: N }, () => new Int8Array(N).fill(-1));
+    const fixed = Array.from({ length: N }, () => new Uint8Array(N));
+
+    function setMod(r, c, val, isFunc) {
+      if (r < 0 || r >= N || c < 0 || c >= N) return;
+      grid[r][c] = val;
+      if (isFunc) fixed[r][c] = 1;
+    }
+
+    function placeFinder(top, left) {
+      for (let dr = -1; dr <= 7; dr++) {
+        for (let dc = -1; dc <= 7; dc++) {
+          const r = top + dr, c = left + dc;
+          if (r < 0 || r >= N || c < 0 || c >= N) continue;
+          const on = (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) &&
+            (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
+          setMod(r, c, on ? 1 : 0, true);
+        }
+      }
+    }
+
+    placeFinder(0, 0);
+    placeFinder(0, N - 7);
+    placeFinder(N - 7, 0);
+
+    // Alignment pattern at (26, 26)
+    for (let dr = -2; dr <= 2; dr++) {
+      for (let dc = -2; dc <= 2; dc++) {
+        const on = Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0);
+        setMod(26 + dr, 26 + dc, on ? 1 : 0, true);
+      }
+    }
+
+    // Timing patterns
+    for (let i = 8; i < N - 8; i++) {
+      setMod(6, i, i % 2 === 0 ? 1 : 0, true);
+      setMod(i, 6, i % 2 === 0 ? 1 : 0, true);
+    }
+
+    // Dark module & reserve format info
+    setMod(N - 8, 8, 1, true);
+    for (let i = 0; i <= 8; i++) {
+      if (i !== 6) {
+        fixed[8][i] = 1;
+        fixed[i][8] = 1;
+      }
+    }
+    for (let i = 0; i < 8; i++) fixed[8][N - 1 - i] = 1;
+    for (let i = 0; i < 7; i++) fixed[N - 1 - i][8] = 1;
+
+    // Place data bits zig-zag
+    let bi = 0;
+    let up = true;
+    for (let col = N - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      for (let step = 0; step < N; step++) {
+        const r = up ? N - 1 - step : step;
+        for (let dc = 0; dc < 2; dc++) {
+          const c = col - dc;
+          if (!fixed[r][c]) {
+            const bit = bi < streamBits.length ? streamBits[bi++] : 0;
+            // Mask 0: (r + c) % 2 === 0
+            grid[r][c] = ((r + c) % 2 === 0) ? (bit ^ 1) : bit;
+          }
+        }
+      }
+      up = !up;
+    }
+
+    // Format info for ECC M (00) + Mask 0 (000) -> 5-bit 00000 -> BCH + XOR 101010000010010 = 101010000010010
+    const fmt = 0b101010000010010;
+    const fmtCoords1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    const fmtCoords2 = [[N-1,8],[N-2,8],[N-3,8],[N-4,8],[N-5,8],[N-6,8],[N-7,8],[8,N-8],[8,N-7],[8,N-6],[8,N-5],[8,N-4],[8,N-3],[8,N-2],[8,N-1]];
+    for (let i = 0; i < 15; i++) {
+      const bit = (fmt >> (14 - i)) & 1;
+      grid[fmtCoords1[i][0]][fmtCoords1[i][1]] = bit;
+      grid[fmtCoords2[i][0]][fmtCoords2[i][1]] = bit;
+    }
+    return grid;
+  }
+
+  function renderQrSvg(text) {
+    const m = buildQrMatrixV4M(text);
+    const N = m.length;
+    const inFinder = (x, y) => (x < 7 && y < 7) || (x >= N - 7 && y < 7) || (x < 7 && y >= N - 7);
+    let rects = "";
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        if (m[y][x] !== 1) continue;
+        if (inFinder(x, y)) {
+          rects += '<rect x="' + x + '" y="' + y + '" width="1.03" height="1.03" fill="#090B0F"/>';
+        } else {
+          rects += '<rect x="' + x + '" y="' + y + '" width="1.05" height="1.05" rx="0.28" fill="#090B0F"/>';
+        }
+      }
+    }
+    return '<svg viewBox="-3 -3 ' + (N + 6) + ' ' + (N + 6) + '" aria-label="QR-код для yumi://pair"><rect x="-3" y="-3" width="' + (N + 6) + '" height="' + (N + 6) + '" fill="#FFFFFF"/>' + rects + '</svg>';
+  }
+
+  /* ── 3. Inline Material Symbols Rounded SVG Icons (0 Emojis!) ──────────── */
+  const ICONS = {
+    shield: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91c4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>',
+    dns: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2z"/></svg>',
+    cloud: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5c0-2.64-2.05-4.78-4.65-4.96z"/></svg>',
+    settings: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z"/></svg>',
+    ping: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10h-2a8 8 0 1 1-8-8V2zm4.24 5.76l-3.89 3.89a1.5 1.5 0 1 0 1.06 1.06l3.89-3.89a1 1 0 0 0-1.06-1.06z"/></svg>',
+    checkCircle: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+    refresh: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
+    del: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+    qr: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-6 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4 0h2v4h-2zm2-4h2v2h-2zm-4-2h2v2h-2zm4 0h2v2h-2zm0 6h2v2h-2z"/></svg>',
+    sd: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-8L4.02 8L4 20c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 6h-2V4h2v4zm3 0h-2V4h2v4zm3 0h-2V4h2v4z"/></svg>',
+    phone: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>',
+    lock: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>',
+    chevronDown: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16.59 8.59L12 13.17L7.41 8.59L6 10l6 6l6-6z"/></svg>',
+    chevronRight: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6l-6 6z"/></svg>',
+    sort: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>',
+    close: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12z"/></svg>',
+    bolt: '<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66l.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/></svg>'
+  };
+
+  /* ── 4. Realistic Russian Switch / Yumi Dataset ─────────────────────────── */
+  function createInitialState(variantId) {
+    return {
+      variant: variantId,
+      screen: variantId === "B" ? "subs" : "servers",
+      filter: "Все",
+      sortByPing: false,
+      measuring: false,
+      measuringNodeId: null,
+      scanning: false,
+      phoneScanned: false,
+      sdImported: false,
+      modalQrOpen: false,
+      collapsedSubs: {},
+      focusedId: "nl-ams",
+      selectedId: variantId === "A" ? "se-arn" : "fi-hel",
+      activeId: "fi-hel",
+      toastMsg: "",
+      toastVisible: false,
+      subs: [
+        {
+          id: "sub-main",
+          name: "Основная подписка",
+          url: "sub.example.net",
+          nodeTotal: 24,
+          usedGb: 142,
+          limitGb: 500,
+          expires: "до 18 дек",
+          enabled: true,
+          busy: false
+        },
+        {
+          id: "sub-home",
+          name: "Домашний WireGuard",
+          url: "192.168.1.1",
+          nodeTotal: 3,
+          usedGb: null,
+          limitGb: null,
+          expires: "Безлимит",
+          enabled: true,
+          busy: false
+        }
+      ],
+      nodes: [
+        {
+          id: "fi-hel",
+          cc: "FI",
+          name: "Финляндия · Хельсинки #1",
+          proto: "VLESS",
+          transport: "REALITY",
+          flow: "Vision",
+          sni: "cdn.cloudflare.net",
+          utls: "chrome",
+          endpoint: "fi-hel-01.example.net:443",
+          ping: 34,
+          subId: "sub-main",
+          subName: "Основная подписка"
+        },
+        {
+          id: "nl-ams",
+          cc: "NL",
+          name: "Нидерланды · Амстердам",
+          proto: "WireGuard",
+          transport: "UDP",
+          flow: "Noise_IK",
+          sni: "—",
+          utls: "—",
+          endpoint: "192.168.1.1:51820",
+          ping: 48,
+          subId: "sub-home",
+          subName: "Домашний WireGuard"
+        },
+        {
+          id: "de-fra",
+          cc: "DE",
+          name: "Германия · Франкфурт",
+          proto: "Hysteria2",
+          transport: "Salamander",
+          flow: "QUIC v2",
+          sni: "de-fra.example.net",
+          utls: "BBR",
+          endpoint: "de-fra.example.net:8443",
+          ping: 52,
+          subId: "sub-main",
+          subName: "Основная подписка"
+        },
+        {
+          id: "se-arn",
+          cc: "SE",
+          name: "Швеция · Стокгольм",
+          proto: "Trojan",
+          transport: "WS",
+          flow: "TLS 1.3",
+          sni: "se-arn.example.net",
+          utls: "firefox",
+          endpoint: "se-arn.example.net:443",
+          ping: 41,
+          subId: "sub-main",
+          subName: "Основная подписка"
+        },
+        {
+          id: "jp-tyo",
+          cc: "JP",
+          name: "Япония · Токио CDN",
+          proto: "VLESS",
+          transport: "XHTTP",
+          flow: "TLS 1.3",
+          sni: "jp-tyo.example.net",
+          utls: "safari",
+          endpoint: "jp-tyo.example.net:443",
+          ping: 146,
+          subId: "sub-main",
+          subName: "Основная подписка"
+        },
+        {
+          id: "pl-waw",
+          cc: "PL",
+          name: "Польша · Варшава",
+          proto: "Shadowsocks",
+          transport: "2022-blake3",
+          flow: "AES-128",
+          sni: "—",
+          utls: "—",
+          endpoint: "pl-waw.example.net:8388",
+          ping: null,
+          subId: "sub-main",
+          subName: "Основная подписка"
+        }
+      ]
+    };
+  }
+
+  const STATES = {
+    A: createInitialState("A"),
+    B: createInitialState("B"),
+    C: createInitialState("C")
+  };
+
+  const QR_URI_A = "yumi://pair?v=1&host=192.168.1.42&port=47654&sid=nxA01";
+  const QR_URI_B = "yumi://pair?v=1&host=192.168.1.42&port=47654&sid=nxB02";
+  const QR_URI_C = "yumi://pair?v=1&host=192.168.1.42&port=47654&sid=nxC03";
+  const QR_SVGS = {
+    A: renderQrSvg(QR_URI_A),
+    B: renderQrSvg(QR_URI_B),
+    C: renderQrSvg(QR_URI_C)
+  };
+
+  function latencyColor(ping) {
+    if (ping === null || ping === undefined) return "var(--latency-dead)";
+    if (ping < 120) return "var(--latency-fast)";
+    if (ping < 400) return "var(--latency-medium)";
+    return "var(--latency-slow)";
+  }
+
+  function latencyText(ping, measuringThis) {
+    if (measuringThis) return "Замер...";
+    if (ping === null || ping === undefined) return "—";
+    return ping + " ms";
+  }
+
+  function latencyLabel(ping) {
+    if (ping === null || ping === undefined) return "Не проверен";
+    if (ping < 120) return "Быстрый маршрут";
+    if (ping < 400) return "Средняя задержка";
+    return "Высокая задержка";
+  }
+
+  function filteredNodes(st) {
+    let list = st.nodes.filter(n => {
+      if (st.filter === "Все") return true;
+      if (st.filter === "SS") return n.proto === "Shadowsocks";
+      return n.proto === st.filter;
+    });
+    if (st.sortByPing) {
+      list = list.slice().sort((a, b) => {
+        const pa = a.ping == null ? 99999 : a.ping;
+        const pb = b.ping == null ? 99999 : b.ping;
+        return pa - pb;
+      });
+    }
+    return list;
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  const toastTimers = {};
+  function showToast(variantId, text) {
+    const st = STATES[variantId];
+    st.toastMsg = text;
+    st.toastVisible = true;
+    renderVariant(variantId);
+    clearTimeout(toastTimers[variantId]);
+    toastTimers[variantId] = setTimeout(() => {
+      st.toastVisible = false;
+      const el = document.querySelector("#stage-" + variantId + " .stage-toast");
+      if (el) el.classList.remove("show");
+    }, 2800);
+  }
+
+  /* ── 5. Interactive Actions (Ping, Phone Scan, SD Import, Select) ───────── */
+  function runPingMeasure(variantId, singleNodeId) {
+    const st = STATES[variantId];
+    if (st.measuring) return;
+    st.measuring = true;
+    st.measuringNodeId = singleNodeId || null;
+    renderVariant(variantId);
+
+    setTimeout(() => {
+      st.nodes.forEach(n => {
+        if (singleNodeId && n.id !== singleNodeId) return;
+        if (n.ping === null) {
+          n.ping = 64;
+        } else {
+          const jitter = Math.floor(Math.random() * 9) - 4;
+          n.ping = Math.max(18, n.ping + jitter);
+        }
+      });
+      st.measuring = false;
+      st.measuringNodeId = null;
+      showToast(variantId, singleNodeId ? "Замер узла завершён" : "UrlTest: обновлена задержка для " + st.nodes.length + " узлов");
+    }, 620);
+  }
+
+  function runPhoneScanSim(variantId) {
+    const st = STATES[variantId];
+    if (st.scanning) return;
+    if (st.phoneScanned) {
+      showToast(variantId, "Профиль «Игровой маршрут» уже передан с телефона");
+      return;
+    }
+    st.scanning = true;
+    renderVariant(variantId);
+
+    setTimeout(() => {
+      st.scanning = false;
+      st.phoneScanned = true;
+      st.subs.push({
+        id: "sub-phone",
+        name: "Игровой маршрут · Yumi Phone",
+        url: "phone-share.yumi.local",
+        nodeTotal: 8,
+        usedGb: 18,
+        limitGb: 200,
+        expires: "до 30 янв",
+        enabled: true,
+        busy: false
+      });
+      st.nodes.push(
+        {
+          id: "lv-rix",
+          cc: "LV",
+          name: "Латвия · Рига #2",
+          proto: "VLESS",
+          transport: "REALITY",
+          flow: "Vision",
+          sni: "lv-rix.example.net",
+          utls: "chrome",
+          endpoint: "lv-rix.example.net:443",
+          ping: 29,
+          subId: "sub-phone",
+          subName: "Игровой маршрут · Yumi Phone"
+        },
+        {
+          id: "us-nyc",
+          cc: "US",
+          name: "США · Нью-Йорк",
+          proto: "Hysteria2",
+          transport: "Salamander",
+          flow: "QUIC v2",
+          sni: "us-nyc.example.net",
+          utls: "BBR",
+          endpoint: "us-nyc.example.net:8443",
+          ping: 138,
+          subId: "sub-phone",
+          subName: "Игровой маршрут · Yumi Phone"
+        }
+      );
+      if (variantId === "C") st.modalQrOpen = false;
+      showToast(variantId, "Принято по ECDH P-256: +1 подписка (Игровой маршрут) и 2 узла");
+    }, 520);
+  }
+
+  function runSdImport(variantId) {
+    const st = STATES[variantId];
+    if (st.sdImported) {
+      showToast(variantId, "sdmc:/switch/YumiSwitch/import.txt уже импортирован");
+      return;
+    }
+    st.sdImported = true;
+    st.subs.push({
+      id: "sub-sd",
+      name: "SD · Резервные узлы",
+      url: "sdmc:/switch/YumiSwitch/import.txt",
+      nodeTotal: 4,
+      usedGb: null,
+      limitGb: null,
+      expires: "Локальный файл",
+      enabled: true,
+      busy: false
+    });
+    st.nodes.push({
+      id: "ee-tll",
+      cc: "EE",
+      name: "Эстония · Таллин",
+      proto: "VLESS",
+      transport: "REALITY",
+      flow: "Vision",
+      sni: "ee-tll.example.net",
+      utls: "chrome",
+      endpoint: "ee-tll.example.net:443",
+      ping: 27,
+      subId: "sub-sd",
+      subName: "SD · Резервные узлы"
+    });
+    if (variantId === "C") st.modalQrOpen = false;
+    showToast(variantId, "Импортирован import.txt с microSD (+1 подписка, +1 узел)");
+  }
+
+  function refreshSub(variantId, subId) {
+    const st = STATES[variantId];
+    const sub = st.subs.find(s => s.id === subId);
+    if (!sub || sub.busy) return;
+    sub.busy = true;
+    renderVariant(variantId);
+    setTimeout(() => {
+      sub.busy = false;
+      showToast(variantId, "Обновлено: " + sub.name + " (" + sub.nodeTotal + " узлов)");
+    }, 560);
+  }
+
+  /* ── 6. Render Variant A (TV 2x3 Grid + Right Rail + Side QR) ───────────── */
+  function renderVariantA(st) {
+    const nodes = filteredNodes(st);
+    const activeNode = st.nodes.find(n => n.id === st.activeId) || st.nodes[0];
+
+    let contentHtml = "";
+    if (st.screen === "servers") {
+      const filters = ["Все", "VLESS", "WireGuard", "Hysteria2"];
+      const filterBtns = filters.map(f =>
+        '<button class="seg-btn stateful' + (st.filter === f ? " active" : "") + '" data-act="filter" data-val="' + f + '" type="button">' + f + "</button>"
+      ).join("");
+
+      const cardsHtml = nodes.map(n => {
+        const isFocused = st.focusedId === n.id;
+        const isSelected = st.selectedId === n.id;
+        const isActive = st.activeId === n.id;
+        const cls = "va-srv-card stateful" + (isFocused ? " is-focused" : "") + (isSelected ? " is-selected" : "");
+        const checkHtml = isSelected
+          ? '<span style="color:var(--primary);display:inline-flex">' + ICONS.checkCircle + "</span>"
+          : "";
+        let pillHtml = "";
+        if (isActive) {
+          pillHtml = '<span class="va-state-pill live"><span class="live-dot"></span>Живой</span>';
+        } else if (isFocused) {
+          pillHtml = '<span class="va-state-pill focus">Фокус D-pad</span>';
+        } else if (isSelected) {
+          pillHtml = '<span class="va-state-pill selected">Выбран</span>';
+        }
+        const metaTxt = [n.proto, n.transport, n.flow, isActive ? "Живой" : null].filter(Boolean).join(" · ");
+        const meas = st.measuring && (!st.measuringNodeId || st.measuringNodeId === n.id);
+        const pingClr = meas ? "var(--secondary)" : latencyColor(n.ping);
+        const metaStyle = (isActive && !isFocused) ? ' style="color:var(--primary)"' : "";
+
+        return (
+          '<button class="' + cls + '" data-act="select-A" data-id="' + n.id + '" type="button">' +
+            '<div class="va-srv-top">' +
+              checkHtml +
+              '<span class="cc-badge sm">' + esc(n.cc) + "</span>" +
+              '<span class="va-srv-name">' + esc(n.name) + "</span>" +
+              pillHtml +
+            "</div>" +
+            '<div class="va-srv-bot">' +
+              '<span class="va-srv-meta"' + metaStyle + ">" + esc(metaTxt) + "</span>" +
+              '<span class="va-srv-ping" style="color:' + pingClr + '">' + esc(latencyText(n.ping, meas)) + "</span>" +
+            "</div>" +
+          "</button>"
+        );
+      }).join("");
+
+      const canActivate = st.selectedId !== st.activeId;
+      contentHtml =
+        '<div class="va-header">' +
+          '<div>' +
+            '<h2 class="va-h1">Серверы</h2>' +
+            '<div class="va-sub tabular">' + nodes.length + ' из ' + st.nodes.length + ' узлов · Живой: ' + esc(activeNode.name) + ' · yumi:ctl 4.8 МБ RAM</div>' +
+          "</div>" +
+          '<div class="connected-group" role="group" aria-label="Фильтр протоколов">' + filterBtns + "</div>" +
+          '<button class="btn-pill btn-outlined stateful" data-act="measure" type="button">' +
+            '<span class="kcap">X</span>' +
+            '<span class="' + (st.measuring ? "spin" : "") + '" style="display:inline-flex">' + ICONS.ping + "</span>" +
+            '<span>' + (st.measuring ? "Замер..." : "Замерить") + "</span>" +
+          "</button>" +
+        "</div>" +
+        '<div class="va-grid-wrap"><div class="va-grid">' + cardsHtml + "</div></div>" +
+        '<div class="va-footer">' +
+          '<div class="va-legend">' +
+            '<span class="leg-item"><span class="leg-swatch focus"></span>Фокус D-pad</span>' +
+            '<span class="leg-item"><span class="leg-swatch sel"></span>Выбран следующим</span>' +
+            '<span class="leg-item"><span class="live-dot"></span>Живой туннель</span>' +
+          "</div>" +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            (canActivate
+              ? '<button class="btn-pill btn-primary stateful" style="height:36px;font-size:13px" data-act="activate-selected" type="button"><span class="kcap">A</span><span>Переключить туннель сюда</span></button>'
+              : '<span style="font-size:12.5px;color:var(--on-surface-variant);display:inline-flex;align-items:center;gap:6px"><span class="kcap">A</span>Выбрать · <span class="kcap">Y</span>Подписки и QR</span>'
+            ) +
+          "</div>" +
+        "</div>";
+    } else {
+      const subsHtml = st.subs.map(s => {
+        const pct = s.limitGb ? Math.round((s.usedGb / s.limitGb) * 100) : 100;
+        const stats = s.limitGb
+          ? (s.nodeTotal + " узла · " + s.usedGb + " / " + s.limitGb + " ГБ · " + s.expires)
+          : (s.nodeTotal + " узла · " + s.expires);
+        return (
+          '<div class="va-sub-row seg-item">' +
+            '<div class="va-sub-info" style="opacity:' + (s.enabled ? "1" : "0.52") + '">' +
+              '<div class="va-sub-title">' + esc(s.name) + "</div>" +
+              '<div class="va-sub-url">' + esc(s.url) + "</div>" +
+              '<div class="va-sub-stats tabular">' + esc(stats) + "</div>" +
+              '<div class="traffic-bar"><div class="traffic-bar-fill" style="width:' + pct + '%;background:' + (s.limitGb ? "var(--primary)" : "var(--tertiary)") + '"></div></div>' +
+            "</div>" +
+            '<button class="m3-switch stateful' + (s.enabled ? " on" : "") + '" data-act="toggle-sub" data-id="' + s.id + '" type="button" aria-label="Включить подписку"><span class="thumb"></span></button>' +
+            '<button class="btn-icon stateful" data-act="refresh-sub" data-id="' + s.id + '" type="button" aria-label="Обновить"><span class="' + (s.busy ? "spin" : "") + '" style="display:inline-flex">' + ICONS.refresh + "</span></button>" +
+            '<button class="btn-icon danger stateful" data-act="remove-sub" data-id="' + s.id + '" type="button" aria-label="Удалить">' + ICONS.del + "</button>" +
+          "</div>"
+        );
+      }).join("");
+
+      const statusLine = st.scanning
+        ? '<span style="color:var(--secondary);font-family:YumiSemibold,sans-serif">Приём по ECDH P-256...</span>'
+        : (st.phoneScanned
+            ? '<span style="color:var(--latency-fast);font-family:YumiSemibold,sans-serif">Профиль с телефона получен</span>'
+            : '<span style="color:var(--primary);font-family:YumiMedium,sans-serif">Ждём камеру телефона Yumi...</span>');
+
+      contentHtml =
+        '<div class="va-header">' +
+          '<div>' +
+            '<h2 class="va-h1">Подписки и QR</h2>' +
+            '<div class="va-sub tabular">' + st.subs.length + ' активных профиля · Локальный приём и import.txt</div>' +
+          "</div>" +
+          '<button class="btn-pill btn-tonal stateful" data-act="refresh-all-subs" type="button">' + ICONS.refresh + '<span>Обновить все</span></button>' +
+        "</div>" +
+        '<div class="va-subs-grid">' +
+          '<div class="va-subs-left">' +
+            '<div class="va-subs-scroll"><div class="seg-stack">' + subsHtml + "</div></div>" +
+            '<button class="btn-pill btn-surface stateful" style="width:100%;justify-content:flex-start" data-act="sd-import" type="button">' +
+              '<span class="kcap">Y</span>' + ICONS.sd + '<span>Импорт import.txt с SD (sdmc:/switch/YumiSwitch/)</span>' +
+            "</button>" +
+          "</div>" +
+          '<div class="va-qr-card">' +
+            '<div style="display:flex;flex-direction:column;gap:8px">' +
+              '<span class="crypto-badge">' + ICONS.lock + 'ECDH P-256 · AES-256-GCM</span>' +
+              '<span style="font-family:YumiSemibold,sans-serif;font-size:19px">QR-приём с телефона Yumi</span>' +
+            "</div>" +
+            '<div class="va-qr-center">' +
+              '<div class="qr-plate" style="width:196px;height:196px">' + QR_SVGS.A + "</div>" +
+              '<div class="va-qr-meta">' +
+                '<div style="font-size:13px;color:var(--on-surface-variant);line-height:1.38">Откройте Yumi на телефоне и отсканируйте код. Передаётся только ссылка или профиль.</div>' +
+                '<div class="mono" style="font-size:13px;background:var(--surface-container);padding:7px 10px;border-radius:10px;color:var(--on-surface)">192.168.1.42:47654</div>' +
+                '<div style="font-size:13px">' + statusLine + "</div>" +
+              "</div>" +
+            "</div>" +
+            '<div style="display:flex;flex-direction:column;gap:8px">' +
+              '<button class="btn-pill btn-primary stateful" style="width:100%" data-act="sim-scan" type="button">' +
+                ICONS.phone + '<span>' + (st.scanning ? "Принимаем данные..." : "Симулировать скан с телефона") + "</span>" +
+              "</button>" +
+              '<button class="btn-pill btn-outlined stateful" style="width:100%;height:40px" data-act="sd-import" type="button">' +
+                ICONS.sd + '<span>Импорт import.txt с SD</span>' +
+              "</button>" +
+            "</div>" +
+          "</div>" +
+        "</div>";
+    }
+
+    const railHtml = [
+      { id: "connect", label: "Подключение", icon: ICONS.shield, active: false },
+      { id: "servers", label: "Серверы", icon: ICONS.dns, active: st.screen === "servers" },
+      { id: "subs", label: "Подписки и QR", icon: ICONS.cloud, active: st.screen === "subs" },
+      { id: "settings", label: "Настройки", icon: ICONS.settings, active: false }
+    ].map(r =>
+      '<button class="va-rail-btn stateful' + (r.active ? " active" : "") + '" data-act="rail" data-screen="' + r.id + '" type="button">' +
+        '<span class="va-rail-pill">' + r.icon + "</span>" +
+        '<span class="va-rail-label">' + r.label + "</span>" +
+      "</button>"
+    ).join("");
+
+    return (
+      '<div class="va-layout">' +
+        '<div class="va-main">' + contentHtml + "</div>" +
+        '<nav class="va-rail" aria-label="Навигация Yumi TV">' + railHtml + "</nav>" +
+        '<div class="stage-toast' + (st.toastVisible ? " show" : "") + '">' + ICONS.checkCircle + '<span>' + esc(st.toastMsg) + "</span></div>" +
+      "</div>"
+    );
+  }
+
+  /* ── 7. Render Variant B (Master-Detail + Step-by-Step QR Wizard) ────────── */
+  function renderVariantB(st) {
+    const nodes = filteredNodes(st);
+    const activeNode = st.nodes.find(n => n.id === st.activeId) || st.nodes[0];
+    const inspNode = st.nodes.find(n => n.id === st.selectedId) || nodes[0] || st.nodes[0];
+
+    const topBar =
+      '<div class="vb-topbar">' +
+        '<div class="vb-brand">' +
+          '<span class="vb-logo-pill">' + ICONS.shield + '<span>Yumi NX</span></span>' +
+          '<div class="connected-group" role="group" aria-label="Переключение экрана">' +
+            '<button class="seg-btn stateful' + (st.screen === "servers" ? " active" : "") + '" data-act="screen" data-val="servers" type="button">' + ICONS.dns + '<span>Серверы</span></button>' +
+            '<button class="seg-btn stateful' + (st.screen === "subs" ? " active" : "") + '" data-act="screen" data-val="subs" type="button">' + ICONS.qr + '<span>Подписки и QR</span></button>' +
+          "</div>" +
+        "</div>" +
+        '<div class="vb-live-chip">' +
+          '<span class="live-dot"></span>' +
+          '<span>Туннель: <strong>' + esc(activeNode.name) + '</strong></span>' +
+          '<span class="mono" style="color:' + latencyColor(activeNode.ping) + '">' + latencyText(activeNode.ping, false) + "</span>" +
+        "</div>" +
+      "</div>";
+
+    let bodyHtml = "";
+    if (st.screen === "servers") {
+      const filters = ["Все", "VLESS", "WireGuard", "Hysteria2", "Trojan", "SS"];
+      const filterRow =
+        '<div class="vb-filter-bar">' +
+          '<div class="connected-group compact">' +
+            filters.map(f => '<button class="seg-btn stateful' + (st.filter === f ? " active" : "") + '" data-act="filter" data-val="' + f + '" type="button">' + f + "</button>").join("") +
+          "</div>" +
+          '<button class="btn-pill btn-outlined stateful" style="height:36px" data-act="measure" type="button">' +
+            '<span class="kcap">X</span>' +
+            '<span class="' + (st.measuring && !st.measuringNodeId ? "spin" : "") + '" style="display:inline-flex">' + ICONS.ping + "</span>" +
+            '<span>' + (st.measuring && !st.measuringNodeId ? "Замер всех..." : "Замерить все (" + nodes.length + ")") + "</span>" +
+          "</button>" +
+        "</div>";
+
+      const listHtml = nodes.map(n => {
+        const isSel = n.id === inspNode.id;
+        const isLive = n.id === st.activeId;
+        const meas = st.measuring && (!st.measuringNodeId || st.measuringNodeId === n.id);
+        return (
+          '<button class="vb-srv-row seg-item stateful' + (isSel ? " selected" : "") + '" data-act="inspect-B" data-id="' + n.id + '" type="button">' +
+            '<span class="cc-badge">' + esc(n.cc) + "</span>" +
+            '<div class="vb-row-mid">' +
+              '<div class="vb-row-name">' + esc(n.name) + "</div>" +
+              '<div class="vb-row-sub">' + esc(n.proto + " · " + n.transport) + "</div>" +
+            "</div>" +
+            '<div class="vb-row-ping" style="color:' + (meas ? "var(--secondary)" : latencyColor(n.ping)) + '">' +
+              (isLive ? '<span class="live-dot"></span>' : "") +
+              '<span>' + esc(latencyText(n.ping, meas)) + "</span>" +
+            "</div>" +
+          "</button>"
+        );
+      }).join("");
+
+      const inspMeas = st.measuring && (!st.measuringNodeId || st.measuringNodeId === inspNode.id);
+      const isInspLive = inspNode.id === st.activeId;
+
+      bodyHtml =
+        filterRow +
+        '<div class="vb-split">' +
+          '<div class="vb-list-col"><div class="vb-list-scroll"><div class="seg-stack">' + listHtml + "</div></div></div>" +
+          '<div class="vb-inspector">' +
+            '<div class="vb-insp-head">' +
+              '<div style="display:flex;align-items:center;gap:14px;min-width:0">' +
+                '<span class="cc-badge lg">' + esc(inspNode.cc) + "</span>" +
+                '<div style="min-width:0">' +
+                  '<h2 class="vb-insp-title">' + esc(inspNode.name) + "</h2>" +
+                  '<div class="vb-insp-sub">' +
+                    (isInspLive ? '<span class="live-dot"></span><span style="color:var(--primary)">Живой туннель</span> · ' : "") +
+                    '<span>' + esc(inspNode.subName) + "</span>" +
+                  "</div>" +
+                "</div>" +
+              "</div>" +
+              '<div class="vb-ping-box">' +
+                '<div class="vb-ping-big" style="color:' + (inspMeas ? "var(--secondary)" : latencyColor(inspNode.ping)) + '">' + esc(latencyText(inspNode.ping, inspMeas)) + "</div>" +
+                '<div style="font-size:11.5px;color:var(--on-surface-variant);margin-top:2px">' + esc(latencyLabel(inspNode.ping)) + "</div>" +
+              "</div>" +
+            "</div>" +
+            '<div class="vb-spec-grid">' +
+              '<div class="vb-spec-cell"><span class="vb-spec-k">Протокол и транспорт</span><span class="vb-spec-v">' + esc(inspNode.proto + " · " + inspNode.transport + " · " + inspNode.flow) + "</span></div>" +
+              '<div class="vb-spec-cell"><span class="vb-spec-k">SNI и отпечаток uTLS</span><span class="vb-spec-v mono">' + esc(inspNode.sni + " · " + inspNode.utls) + "</span></div>" +
+              '<div class="vb-spec-cell"><span class="vb-spec-k">Конечная точка (Endpoint)</span><span class="vb-spec-v mono">' + esc(inspNode.endpoint) + "</span></div>" +
+              '<div class="vb-spec-cell"><span class="vb-spec-k">Маршрут ядра core-net</span><span class="vb-spec-v">Bypass LAN · Блок QUIC</span></div>' +
+            "</div>" +
+            '<div style="display:flex;gap:12px">' +
+              '<button class="btn-pill btn-primary lg stateful" style="flex:1" data-act="connect-B" data-id="' + inspNode.id + '" type="button">' +
+                '<span class="kcap">A</span>' +
+                '<span>' + (isInspLive ? "Подключён сейчас (активный)" : "Подключить сюда") + "</span>" +
+              "</button>" +
+              '<button class="btn-pill btn-surface lg stateful" data-act="measure-one" data-id="' + inspNode.id + '" type="button">' +
+                '<span class="kcap">X</span>' +
+                '<span class="' + (inspMeas ? "spin" : "") + '" style="display:inline-flex">' + ICONS.ping + "</span>" +
+                '<span>Пинг узла</span>' +
+              "</button>" +
+            "</div>" +
+          "</div>" +
+        "</div>";
+    } else {
+      const subsList = st.subs.map(s => {
+        const pct = s.limitGb ? Math.round((s.usedGb / s.limitGb) * 100) : 100;
+        const stats = s.limitGb
+          ? (s.nodeTotal + " узла · " + s.usedGb + " / " + s.limitGb + " ГБ · " + s.expires)
+          : (s.nodeTotal + " узла · " + s.expires);
+        return (
+          '<div class="seg-item" style="background:var(--surface-high);padding:15px 18px;display:flex;flex-direction:column;gap:8px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+              '<div style="min-width:0;opacity:' + (s.enabled ? "1" : "0.52") + '">' +
+                '<div style="font-family:YumiSemibold,sans-serif;font-size:16px">' + esc(s.name) + "</div>" +
+                '<div class="mono" style="font-size:12px;color:var(--on-surface-variant);margin-top:2px">' + esc(s.url) + "</div>" +
+              "</div>" +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+                '<button class="btn-icon stateful" style="width:38px;height:38px" data-act="refresh-sub" data-id="' + s.id + '" type="button" aria-label="Обновить"><span class="' + (s.busy ? "spin" : "") + '" style="display:inline-flex">' + ICONS.refresh + "</span></button>" +
+                '<button class="m3-switch stateful' + (s.enabled ? " on" : "") + '" data-act="toggle-sub" data-id="' + s.id + '" type="button" aria-label="Переключить"><span class="thumb"></span></button>' +
+              "</div>" +
+            "</div>" +
+            '<div class="tabular" style="font-size:12.5px;color:var(--on-surface-variant)">' + esc(stats) + "</div>" +
+            '<div class="traffic-bar"><div class="traffic-bar-fill" style="width:' + pct + '%;background:' + (s.limitGb ? "var(--primary)" : "var(--tertiary)") + '"></div></div>' +
+          "</div>"
+        );
+      }).join("");
+
+      const pairStatus = st.scanning
+        ? '<span style="color:var(--secondary);white-space:nowrap">Приём и расшифровка...</span>'
+        : (st.phoneScanned
+            ? '<span style="color:var(--latency-fast);white-space:nowrap">Подписка добавлена</span>'
+            : '<span style="color:var(--primary);white-space:nowrap">Сессия активна · ждём камеру</span>');
+
+      const totalNodesSub = st.subs.reduce((acc, x) => acc + x.nodeTotal, 0);
+      bodyHtml =
+        '<div class="vb-split" style="margin-top:14px">' +
+          '<div class="vb-list-col" style="justify-content:space-between">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">' +
+              '<span style="font-family:YumiSemibold,sans-serif;font-size:15px">Профили подписок (' + st.subs.length + ')</span>' +
+              '<span class="tabular" style="font-size:12.5px;color:var(--on-surface-variant)">Всего узлов: ' + totalNodesSub + ' · Автообновление 12 ч</span>' +
+            "</div>" +
+            '<div class="vb-list-scroll"><div class="seg-stack">' + subsList + "</div></div>" +
+            '<button class="btn-pill btn-tonal lg stateful" style="width:100%;justify-content:flex-start" data-act="sd-import" type="button">' +
+              '<span class="kcap">Y</span>' + ICONS.sd + '<span>Добавить из файла (SD) · import.txt</span>' +
+            "</button>" +
+          "</div>" +
+          '<div class="vb-qr-wizard">' +
+            '<div style="display:flex;flex-direction:column;gap:14px">' +
+              '<div>' +
+                '<span class="crypto-badge">' + ICONS.lock + 'ECDH P-256 · AES-256-GCM</span>' +
+                '<h2 style="margin:10px 0 4px;font-family:YumiDisplay,sans-serif;font-size:23px;line-height:1.12">Передача подписки с телефона Yumi</h2>' +
+                '<div style="font-size:13px;color:var(--on-surface-variant)">Без ввода длинных ссылок с экранной клавиатуры Switch</div>' +
+              "</div>" +
+              '<div class="vb-steps">' +
+                '<div class="vb-step"><span class="vb-step-num">1</span><span>Откройте Yumi на телефоне и выберите подписку</span></div>' +
+                '<div class="vb-step"><span class="vb-step-num">2</span><span>Нажмите «Отправить на Switch / TV» и наведите камеру</span></div>' +
+                '<div class="vb-step"><span class="vb-step-num">3</span><span>Подтвердите передачу — конфиг сразу появится слева</span></div>' +
+              "</div>" +
+              '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface-container);padding:10px 14px;border-radius:14px;font-size:12.5px">' +
+                '<span class="mono" style="color:var(--on-surface);white-space:nowrap">192.168.1.42:47654</span>' +
+                pairStatus +
+              "</div>" +
+              '<button class="btn-pill btn-primary lg stateful" style="width:100%" data-act="sim-scan" type="button">' +
+                ICONS.phone + '<span>' + (st.scanning ? "Принимаем с телефона..." : "Симулировать скан с телефона") + "</span>" +
+              "</button>" +
+            "</div>" +
+            '<div style="display:flex;flex-direction:column;align-items:center;gap:10px">' +
+              '<div class="qr-plate" style="width:242px;height:242px">' + QR_SVGS.B + "</div>" +
+              '<div class="mono" style="font-size:11.5px;color:var(--on-surface-variant)">yumi://pair · Локальный TLS</div>' +
+            "</div>" +
+          "</div>" +
+        "</div>";
+    }
+
+    return (
+      '<div class="vb-layout">' +
+        topBar +
+        bodyHtml +
+        '<div class="stage-toast' + (st.toastVisible ? " show" : "") + '">' + ICONS.checkCircle + '<span>' + esc(st.toastMsg) + "</span></div>" +
+      "</div>"
+    );
+  }
+
+  /* ── 8. Render Variant C (Clusters + Bento + Modal QR Island) ───────────── */
+  function renderVariantC(st) {
+    const nodes = filteredNodes(st);
+    const filters = ["Все", "VLESS", "WireGuard", "Hysteria2", "Trojan", "SS"];
+
+    const topCapsule =
+      '<div class="vc-capsule-bar">' +
+        '<div class="connected-group compact" role="group">' +
+          '<button class="seg-btn stateful' + (st.screen === "servers" ? " active" : "") + '" data-act="screen" data-val="servers" type="button">' + ICONS.dns + '<span>Серверы</span></button>' +
+          '<button class="seg-btn stateful' + (st.screen === "subs" ? " active" : "") + '" data-act="screen" data-val="subs" type="button">' + ICONS.cloud + '<span>Подписки и QR</span></button>' +
+        "</div>" +
+        '<div class="vc-filter-cluster">' +
+          '<span class="kcap">L</span>' +
+          '<div class="connected-group compact">' +
+            filters.map(f => '<button class="seg-btn stateful' + (st.filter === f ? " active" : "") + '" data-act="filter" data-val="' + f + '" type="button">' + f + "</button>").join("") +
+          "</div>" +
+          '<span class="kcap">R</span>' +
+        "</div>" +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<button class="btn-pill btn-surface stateful" style="height:36px;padding-inline:12px 14px;font-size:12.5px" data-act="toggle-sort" type="button">' +
+            ICONS.sort + '<span>' + (st.sortByPing ? "Пинг ↑" : "Списком") + "</span>" +
+          "</button>" +
+          '<button class="btn-pill btn-surface stateful" style="height:36px;padding-inline:10px 14px;font-size:12.5px" data-act="measure" type="button">' +
+            '<span class="kcap">X</span><span class="' + (st.measuring ? "spin" : "") + '" style="display:inline-flex">' + ICONS.ping + "</span><span>Пинг</span>" +
+          "</button>" +
+          '<button class="btn-pill btn-primary stateful" style="height:38px;padding-inline:12px 16px;font-size:13px" data-act="open-modal-qr" type="button">' +
+            '<span class="kcap">Y</span>' + ICONS.qr + '<span>Передать с телефона (QR)</span>' +
+          "</button>" +
+        "</div>" +
+      "</div>";
+
+    let bodyHtml = "";
+    if (st.screen === "servers") {
+      const groupsHtml = st.subs.map(sub => {
+        const subNodes = nodes.filter(n => n.subId === sub.id);
+        if (subNodes.length === 0) return "";
+        const collapsed = !!st.collapsedSubs[sub.id];
+        const stats = sub.limitGb
+          ? (sub.usedGb + " / " + sub.limitGb + " ГБ · " + sub.expires)
+          : sub.expires;
+
+        const rowsHtml = collapsed ? "" : '<div class="seg-stack" style="margin-top:6px">' + subNodes.map(n => {
+          const isLive = n.id === st.activeId;
+          const isSel = n.id === st.selectedId;
+          const meas = st.measuring && (!st.measuringNodeId || st.measuringNodeId === n.id);
+          return (
+            '<button class="vc-srv-row seg-item stateful' + (isLive ? " live" : (isSel ? " selected" : "")) + '" data-act="select-C" data-id="' + n.id + '" type="button">' +
+              '<span class="cc-badge sm">' + esc(n.cc) + "</span>" +
+              '<span class="vc-srv-name">' + esc(n.name) + "</span>" +
+              '<span class="vc-proto-chip">' + esc(n.proto + " · " + n.transport + " · " + n.flow) + "</span>" +
+              (isLive
+                ? '<span class="va-state-pill live"><span class="live-dot"></span>Живой</span>'
+                : (isSel ? '<span class="va-state-pill selected">Выбран</span>' : '<span style="width:70px"></span>')) +
+              '<span class="mono" style="width:76px;text-align:right;font-size:14.5px;color:' + (meas ? "var(--secondary)" : latencyColor(n.ping)) + '">' + esc(latencyText(n.ping, meas)) + "</span>" +
+            "</button>"
+          );
+        }).join("") + "</div>";
+
+        return (
+          '<div>' +
+            '<button class="vc-group-head stateful" data-act="toggle-group" data-id="' + sub.id + '" type="button">' +
+              '<div class="vc-group-left">' +
+                (collapsed ? ICONS.chevronRight : ICONS.chevronDown) +
+                '<span class="vc-group-title">' + esc(sub.name) + "</span>" +
+                '<span class="vc-group-meta tabular">· ' + esc(stats) + "</span>" +
+              "</div>" +
+              '<span class="vc-proto-chip tabular">' + subNodes.length + " из " + sub.nodeTotal + " узлов</span>" +
+            "</button>" +
+            rowsHtml +
+          "</div>"
+        );
+      }).join("");
+
+      bodyHtml = '<div class="vc-clusters-scroll">' + (groupsHtml || '<div style="padding:40px;text-align:center;color:var(--on-surface-variant)">Нет узлов по выбранному фильтру протокола</div>') + "</div>";
+    } else {
+      const bentoCards = st.subs.map(sub => {
+        const subNodes = st.nodes.filter(n => n.subId === sub.id);
+        const fastCount = subNodes.filter(n => n.ping !== null && n.ping < 120).length;
+        const pct = sub.limitGb ? Math.round((sub.usedGb / sub.limitGb) * 100) : 100;
+        const stats = sub.limitGb
+          ? (sub.usedGb + " / " + sub.limitGb + " ГБ · " + sub.expires)
+          : sub.expires;
+        const nodesWord = (sub.nodeTotal % 10 === 1 && sub.nodeTotal % 100 !== 11) ? "узел" : ((sub.nodeTotal % 10 >= 2 && sub.nodeTotal % 10 <= 4 && (sub.nodeTotal % 100 < 10 || sub.nodeTotal % 100 >= 20)) ? "узла" : "узлов");
+        return (
+          '<div class="vc-bento-card">' +
+            '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">' +
+              '<div>' +
+                '<div style="font-family:YumiSemibold,sans-serif;font-size:19px">' + esc(sub.name) + "</div>" +
+                '<div class="mono" style="font-size:12.5px;color:var(--on-surface-variant);margin-top:3px">' + esc(sub.url) + "</div>" +
+              "</div>" +
+              '<button class="m3-switch stateful' + (sub.enabled ? " on" : "") + '" data-act="toggle-sub" data-id="' + sub.id + '" type="button" aria-label="Включить"><span class="thumb"></span></button>' +
+            "</div>" +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px">' +
+              '<span class="vc-proto-chip tabular" style="background:var(--surface-container);color:var(--on-surface)">UrlTest: ' + fastCount + "/" + subNodes.length + " быстрых</span>" +
+              '<span class="tabular" style="color:var(--on-surface-variant)">' + sub.nodeTotal + " " + nodesWord + " · " + esc(stats) + "</span>" +
+            "</div>" +
+            '<div class="traffic-bar"><div class="traffic-bar-fill" style="width:' + pct + '%;background:' + (sub.limitGb ? "var(--primary)" : "var(--tertiary)") + '"></div></div>' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-top:auto">' +
+              '<button class="btn-pill btn-tonal stateful" style="flex:1" data-act="open-modal-qr" type="button">' + ICONS.qr + '<span>QR-приём</span></button>' +
+              '<button class="btn-pill btn-surface stateful" data-act="refresh-sub" data-id="' + sub.id + '" type="button"><span class="' + (sub.busy ? "spin" : "") + '" style="display:inline-flex">' + ICONS.refresh + '</span><span>Обновить</span></button>' +
+              '<button class="btn-icon danger stateful" data-act="remove-sub" data-id="' + sub.id + '" type="button" aria-label="Удалить">' + ICONS.del + "</button>" +
+            "</div>" +
+          "</div>"
+        );
+      }).join("");
+
+      bodyHtml =
+        '<div class="vc-bento-grid">' + bentoCards + "</div>" +
+        '<div class="vc-sd-strip">' +
+          '<div style="display:flex;align-items:center;gap:10px;font-size:13.5px">' +
+            ICONS.sd + '<span>Локальный импорт файла конфигурации: <span class="mono" style="color:var(--primary)">sdmc:/switch/YumiSwitch/import.txt</span></span>' +
+          "</div>" +
+          '<div style="display:flex;gap:10px">' +
+            '<button class="btn-pill btn-surface stateful" style="height:40px" data-act="sd-import" type="button">' + ICONS.sd + '<span>Импорт import.txt</span></button>' +
+            '<button class="btn-pill btn-primary stateful" style="height:40px" data-act="open-modal-qr" type="button"><span class="kcap">Y</span>' + ICONS.qr + '<span>Передать по QR</span></button>' +
+          "</div>" +
+        "</div>";
+    }
+
+    const modalHtml =
+      '<div class="vc-modal-scrim' + (st.modalQrOpen ? " open" : "") + '" data-act="close-modal-bg">' +
+        '<div class="vc-modal-island" onclick="event.stopPropagation()">' +
+          '<div style="display:flex;flex-direction:column;gap:14px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between">' +
+              '<span class="crypto-badge">' + ICONS.lock + 'ECDH P-256 · AES-256-GCM</span>' +
+              '<button class="btn-icon stateful" style="width:36px;height:36px;border-radius:9999px" data-act="close-modal" type="button" aria-label="Закрыть">' + ICONS.close + "</button>" +
+            "</div>" +
+            '<h3 style="margin:0;font-family:YumiDisplay,sans-serif;font-size:25px;line-height:1.1">Приём подписки с телефона Yumi</h3>' +
+            '<div style="font-size:13.5px;line-height:1.45;color:var(--on-surface-variant)">Наведите камеру телефона в приложении Yumi — подписка придёт напрямую по локальной сети без ввода URL с геймпада.</div>' +
+            '<div style="background:var(--surface-container);padding:10px 14px;border-radius:14px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px">' +
+              '<span class="mono">192.168.1.42:47654</span>' +
+              '<span style="color:var(--primary)">' + (st.scanning ? "Принимаем данные..." : "Ожидаем сканирование") + "</span>" +
+            "</div>" +
+            '<div style="display:flex;flex-direction:column;gap:8px">' +
+              '<button class="btn-pill btn-primary stateful" style="width:100%" data-act="sim-scan" type="button">' + ICONS.phone + '<span>' + (st.scanning ? "Сканируем..." : "Симулировать скан с телефона") + "</span></button>" +
+              '<div style="display:flex;gap:8px">' +
+                '<button class="btn-pill btn-surface stateful" style="flex:1;height:40px" data-act="sd-import" type="button">' + ICONS.sd + '<span>Импорт import.txt</span></button>' +
+                '<button class="btn-pill btn-outlined stateful" style="height:40px" data-act="close-modal" type="button"><span class="kcap">B</span><span>Закрыть</span></button>' +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:10px">' +
+            '<div class="qr-plate" style="width:248px;height:248px;border-radius:22px">' + QR_SVGS.C + "</div>" +
+            '<span class="mono" style="font-size:11.5px;color:var(--on-surface-variant)">yumi://pair · Одноразовая сессия</span>' +
+          "</div>" +
+        "</div>" +
+      "</div>";
+
+    return (
+      '<div class="vc-layout">' +
+        topCapsule +
+        bodyHtml +
+        modalHtml +
+        '<div class="stage-toast' + (st.toastVisible ? " show" : "") + '">' + ICONS.checkCircle + '<span>' + esc(st.toastMsg) + "</span></div>" +
+      "</div>"
+    );
+  }
+
+  function renderVariant(id) {
+    const st = STATES[id];
+    const el = document.getElementById("stage-" + id);
+    if (!el) return;
+    if (id === "A") el.innerHTML = renderVariantA(st);
+    else if (id === "B") el.innerHTML = renderVariantB(st);
+    else if (id === "C") el.innerHTML = renderVariantC(st);
+
+    // Sync outer helper toggle bar
+    const syncBar = document.querySelector('[data-sync-screen="' + id + '"]');
+    if (syncBar) {
+      syncBar.querySelectorAll("[data-go-screen]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.goScreen === st.screen);
+      });
+    }
+  }
+
+  /* ── 9. Event Delegation Inside Switch Stages ───────────────────────────── */
+  function attachStageEvents(id) {
+    const stage = document.getElementById("stage-" + id);
+    if (!stage) return;
+    stage.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-act]");
+      if (!btn) return;
+      const st = STATES[id];
+      const act = btn.dataset.act;
+
+      if (act === "rail") {
+        const scr = btn.dataset.screen;
+        if (scr === "servers" || scr === "subs") {
+          st.screen = scr;
+          renderVariant(id);
+        } else {
+          showToast(id, scr === "connect" ? "Экран «Подключение» — в предыдущем макете 01" : "Настройки палитр и ядра доступны вверху");
+        }
+      } else if (act === "screen") {
+        st.screen = btn.dataset.val;
+        renderVariant(id);
+      } else if (act === "filter") {
+        st.filter = btn.dataset.val;
+        renderVariant(id);
+      } else if (act === "select-A") {
+        const nid = btn.dataset.id;
+        st.focusedId = nid;
+        st.selectedId = nid;
+        renderVariant(id);
+      } else if (act === "activate-selected") {
+        st.activeId = st.selectedId;
+        const node = st.nodes.find(n => n.id === st.activeId);
+        showToast(id, "Туннель переключён на " + (node ? node.name : ""));
+      } else if (act === "inspect-B") {
+        st.selectedId = btn.dataset.id;
+        renderVariant(id);
+      } else if (act === "connect-B") {
+        st.activeId = btn.dataset.id;
+        st.selectedId = btn.dataset.id;
+        const node = st.nodes.find(n => n.id === st.activeId);
+        showToast(id, "Подключено к " + (node ? node.name : ""));
+      } else if (act === "select-C") {
+        const nid = btn.dataset.id;
+        if (st.selectedId === nid) {
+          st.activeId = nid;
+          const node = st.nodes.find(n => n.id === nid);
+          showToast(id, "Туннель переключён на " + (node ? node.name : ""));
+        } else {
+          st.selectedId = nid;
+          st.activeId = nid;
+          const node = st.nodes.find(n => n.id === nid);
+          showToast(id, "Выбран и запущен: " + (node ? node.name : ""));
+        }
+      } else if (act === "toggle-group") {
+        const sid = btn.dataset.id;
+        st.collapsedSubs[sid] = !st.collapsedSubs[sid];
+        renderVariant(id);
+      } else if (act === "toggle-sort") {
+        st.sortByPing = !st.sortByPing;
+        renderVariant(id);
+      } else if (act === "measure") {
+        runPingMeasure(id, null);
+      } else if (act === "measure-one") {
+        runPingMeasure(id, btn.dataset.id);
+      } else if (act === "sim-scan") {
+        runPhoneScanSim(id);
+      } else if (act === "sd-import") {
+        runSdImport(id);
+      } else if (act === "toggle-sub") {
+        const sub = st.subs.find(s => s.id === btn.dataset.id);
+        if (sub) {
+          sub.enabled = !sub.enabled;
+          renderVariant(id);
+        }
+      } else if (act === "refresh-sub") {
+        refreshSub(id, btn.dataset.id);
+      } else if (act === "refresh-all-subs") {
+        st.subs.forEach(s => refreshSub(id, s.id));
+      } else if (act === "remove-sub") {
+        if (st.subs.length <= 1) {
+          showToast(id, "Нельзя удалить последнюю подписку в демо");
+          return;
+        }
+        const sid = btn.dataset.id;
+        st.subs = st.subs.filter(s => s.id !== sid);
+        st.nodes = st.nodes.filter(n => n.subId !== sid);
+        if (!st.nodes.some(n => n.id === st.activeId) && st.nodes[0]) st.activeId = st.nodes[0].id;
+        if (!st.nodes.some(n => n.id === st.selectedId) && st.nodes[0]) st.selectedId = st.nodes[0].id;
+        showToast(id, "Подписка удалена");
+      } else if (act === "open-modal-qr") {
+        st.modalQrOpen = true;
+        renderVariant(id);
+      } else if (act === "close-modal" || act === "close-modal-bg") {
+        st.modalQrOpen = false;
+        renderVariant(id);
+      }
+    });
+  }
+
+  /* ── 10. ResizeObserver 1280x720 Exact Scaling ──────────────────────────── */
+  const ro = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const host = entry.target;
+      const stage = host.querySelector(".switch-stage");
+      if (!stage) continue;
+      const w = host.clientWidth;
+      if (w <= 0) continue;
+      const scale = w / 1280;
+      stage.style.transform = "scale(" + scale + ")";
+      host.style.height = Math.round(720 * scale) + "px";
+    }
+  });
+
+  function initShowcase() {
+    // Render 7 Yumi palettes
+    const palRow = document.getElementById("palette-switcher");
+    palRow.innerHTML = PALETTES.map(p =>
+      '<button class="pal-btn stateful' + (p.id === currentPalette ? " active" : "") + '" data-pal="' + p.id + '" type="button">' +
+        '<span class="pal-dot" style="background:' + p.swatch + '"></span>' +
+        '<span>' + p.label + "</span>" +
+      "</button>"
+    ).join("");
+
+    palRow.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-pal]");
+      if (!b) return;
+      currentPalette = b.dataset.pal;
+      applyTheme();
+    });
+
+    document.getElementById("amoled-toggle").addEventListener("click", () => {
+      isAmoled = !isAmoled;
+      applyTheme();
+    });
+
+    document.getElementById("view-filter").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-view]");
+      if (!b) return;
+      const v = b.dataset.view;
+      document.querySelectorAll("#view-filter .seg-btn").forEach(x => x.classList.toggle("active", x.dataset.view === v));
+      document.querySelectorAll("[data-variant-card]").forEach(sec => {
+        sec.classList.toggle("hidden", v !== "all" && sec.dataset.variantCard !== v);
+      });
+    });
+
+    document.querySelectorAll("[data-sync-screen]").forEach(bar => {
+      const vid = bar.dataset.syncScreen;
+      bar.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-go-screen]");
+        if (!b) return;
+        STATES[vid].screen = b.dataset.goScreen;
+        renderVariant(vid);
+      });
+    });
+
+    document.getElementById("btn-reset-all").addEventListener("click", () => {
+      STATES.A = createInitialState("A");
+      STATES.B = createInitialState("B");
+      STATES.C = createInitialState("C");
+      ["A", "B", "C"].forEach(renderVariant);
+    });
+
+    const qp = new URLSearchParams(location.search);
+    if (qp.get("pal")) currentPalette = qp.get("pal");
+    if (qp.get("amoled") === "1") isAmoled = true;
+    if (qp.get("alt") === "1") {
+      STATES.A.screen = "subs";
+      STATES.B.screen = "servers";
+      STATES.C.screen = "subs";
+    }
+    if (qp.get("modal") === "1") {
+      STATES.C.screen = "servers";
+      STATES.C.modalQrOpen = true;
+    }
+    if (qp.get("view")) {
+      const v = qp.get("view");
+      document.querySelectorAll("#view-filter .seg-btn").forEach(x => x.classList.toggle("active", x.dataset.view === v));
+      document.querySelectorAll("[data-variant-card]").forEach(sec => {
+        sec.classList.toggle("hidden", v !== "all" && sec.dataset.variantCard !== v);
+      });
+    }
+
+    applyTheme();
+    ["A", "B", "C"].forEach(id => {
+      renderVariant(id);
+      attachStageEvents(id);
+    });
+    document.querySelectorAll(".stage-host").forEach(host => ro.observe(host));
+  }
+
+  initShowcase();
+})();
+</script>
+</body>
+</html>

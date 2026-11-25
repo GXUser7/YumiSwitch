@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yumi NX · Витрина UI-макетов Material 3 Expressive</title>
+<style>
+  @font-face {
+    font-family: "YumiDisplay";
+    src: url("../app/romfs/fonts/roboto_flex_display.ttf") format("truetype");
+    font-weight: 880;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "YumiUI";
+    src: url("../app/romfs/fonts/roboto_flex_regular.ttf") format("truetype");
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "YumiUI";
+    src: url("../app/romfs/fonts/roboto_flex_medium.ttf") format("truetype");
+    font-weight: 500;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "YumiUI";
+    src: url("../app/romfs/fonts/roboto_flex_semibold.ttf") format("truetype");
+    font-weight: 620;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "YumiMono";
+    src: url("../app/romfs/fonts/roboto_mono_medium.ttf") format("truetype");
+    font-weight: 500;
+    font-display: swap;
+  }
+
+  :root {
+    --surface: #090B0F;
+    --surface-low: #0F131A;
+    --surface-container: #151A22;
+    --surface-high: #1C222C;
+    --surface-highest: #232A35;
+    --primary: #A8C7FF;
+    --on-primary: #07203F;
+    --primary-container: #24314A;
+    --on-primary-container: #D5E3FF;
+    --secondary: #F0BE73;
+    --tertiary: #8FD6C0;
+    --on-surface: #E7ECF4;
+    --on-surface-variant: #9AA5B6;
+    --spring-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+    --spring-effects: cubic-bezier(0.34, 0.80, 0.34, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    color: var(--on-surface);
+    font-family: "YumiUI", system-ui, sans-serif;
+    line-height: 1.45;
+  }
+
+  .wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 36px 28px 56px;
+  }
+
+  .hero {
+    background: var(--surface-container);
+    border-radius: 32px;
+    padding: 28px 32px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .brand-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    background: var(--primary-container);
+    color: var(--primary);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: "YumiDisplay", system-ui, sans-serif;
+    font-size: 36px;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+  }
+
+  .subtitle {
+    margin: 6px 0 0;
+    color: var(--on-surface-variant);
+    font-size: 15px;
+    max-width: 720px;
+  }
+
+  .meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    background: var(--surface-high);
+    color: var(--on-surface);
+    padding: 8px 14px;
+    border-radius: 9999px;
+    font-family: "YumiMono", monospace;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pill.accent {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  @media (max-width: 1020px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface-container);
+    border-radius: 28px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform 350ms var(--spring-spatial), background-color 200ms var(--spring-effects);
+  }
+
+  .card:hover {
+    background: var(--surface-high);
+    transform: translateY(-2px);
+  }
+
+  .thumb-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface-low);
+    aspect-ratio: 16 / 10;
+    position: relative;
+  }
+
+  .thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+  }
+
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .card h2 {
+    margin: 0;
+    font-family: "YumiDisplay", system-ui, sans-serif;
+    font-size: 21px;
+    line-height: 1.15;
+  }
+
+  .tag {
+    background: var(--surface-highest);
+    color: var(--primary);
+    padding: 5px 11px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 620;
+    white-space: nowrap;
+  }
+
+  .variants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .variants-list li {
+    background: var(--surface-low);
+    padding: 9px 13px;
+    font-size: 13px;
+    color: var(--on-surface-variant);
+    border-radius: 8px;
+  }
+
+  .variants-list li:first-child { border-radius: 16px 16px 8px 8px; }
+  .variants-list li:last-child { border-radius: 8px 8px 16px 16px; }
+  .variants-list strong { color: var(--on-surface); font-weight: 620; }
+
+  .open-btn {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 9999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    text-decoration: none;
+    font-weight: 620;
+    font-size: 15px;
+    transition: transform 200ms var(--spring-effects), border-radius 250ms var(--spring-spatial);
+  }
+
+  .open-btn:hover { transform: scale(1.015); }
+  .open-btn:active { border-radius: 12px; transform: scale(0.985); }
+
+  .open-btn:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  .final-hero {
+    background: var(--surface-container);
+    border-radius: 32px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 22px;
+    align-items: center;
+  }
+
+  @media (max-width: 1020px) {
+    .final-hero { grid-template-columns: 1fr; }
+  }
+
+  .final-preview {
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface-low);
+    aspect-ratio: 16 / 9;
+  }
+
+  .final-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+  }
+
+  .final-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .final-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .final-body h2 {
+    margin: 0;
+    font-family: "YumiDisplay", system-ui, sans-serif;
+    font-size: 28px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .final-desc {
+    margin: 0;
+    color: var(--on-surface-variant);
+    font-size: 14px;
+    line-height: 1.48;
+  }
+
+  .rec {
+    margin-top: 22px;
+    background: var(--surface-container);
+    border-radius: 28px;
+    padding: 22px 28px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .rec h3 {
+    margin: 0 0 4px;
+    font-family: "YumiDisplay", system-ui, sans-serif;
+    font-size: 19px;
+  }
+
+  .rec p {
+    margin: 0;
+    color: var(--on-surface-variant);
+    font-size: 14px;
+    max-width: 900px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V13H5V6.3l7-3.11v9.8z"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Yumi NX · Дизайн-система Switch</h1>
+          <p class="subtitle">
+            3 интерактивных стенда Material 3 Expressive на реальных токенах Yumi v2.3.3:
+            1280×720 приложение yumi.nro и 448×720 Tesla/Ultrahand оверлей yumi.ovl поверх YouTube.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="meta-pills">
+      <span class="pill accent">7 палитр + AMOLED</span>
+      <span class="pill">HOS 19.x / 20.0+</span>
+      <span class="pill">Без автозамены</span>
+      <span class="pill">NanoVG + Yoga ready</span>
+    </div>
+  </header>
+
+  <section class="final-hero">
+    <div class="final-preview">
+      <img src="screenshots/04_final_unified.png" alt="Превью единого финального макета Yumi NX">
+    </div>
+    <div class="final-body">
+      <div class="final-badge-row">
+        <span class="pill accent">Утверждённая сборка</span>
+        <span class="pill">B · Портативный кокпит</span>
+        <span class="pill">B · Мастер-деталь</span>
+        <span class="pill">A · Категории + Tesla HUD</span>
+      </div>
+      <h2>Yumi NX · Единый макет приложения и оверлея</h2>
+      <p class="final-desc">
+        Полный интерактивный прототип с общим состоянием: все 5 вкладок <code>yumi.nro</code>,
+        живой рельс с триггерами <code>L/R</code>, визуализаторы <code>Волны / Планета</code>,
+        инспектор серверов, <code>yumi://pair</code> QR-приём и переключаемый <code>448×720</code> Tesla HUD поверх YouTube синхронизированы в реальном времени.
+      </p>
+      <a class="open-btn" href="yumi_nx_final_mockup.html">
+        <span>Открыть единый интерактивный макет</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <main class="grid">
+    <article class="card">
+      <div class="thumb-wrap">
+        <img src="screenshots/01_connect.png" alt="Превью главного экрана подключения Yumi NX">
+      </div>
+      <div class="card-title-row">
+        <h2>01 · Подключение и навигация</h2>
+        <span class="tag">3 варианта</span>
+      </div>
+      <ul class="variants-list">
+        <li><strong>A · «Путешествующая пилюля»</strong> — прямой наследник Yumi TV с морфингом в рельс</li>
+        <li><strong>B · «Портативный кокпит»</strong> — постоянный левый рельс под Joy-Con + RAM sysmodule</li>
+        <li><strong>C · «Остров фокуса»</strong> — верхние L/R табы + широкое асимметричное бенто</li>
+      </ul>
+      <a class="open-btn" href="01_connect_and_navigation.html">
+        <span>Открыть интерактивный макет</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </a>
+    </article>
+
+    <article class="card">
+      <div class="thumb-wrap">
+        <img src="screenshots/02_servers_qr.png" alt="Превью серверов, подписок и QR передачи Yumi NX">
+      </div>
+      <div class="card-title-row">
+        <h2>02 · Серверы, подписки и QR</h2>
+        <span class="tag">3 варианта</span>
+      </div>
+      <ul class="variants-list">
+        <li><strong>A · «Сетка TV 2×3 + Боковая зона QR»</strong> — 3 ряда карточек + постоянный QR-приёмник</li>
+        <li><strong>B · «Мастер-деталь под Joy-Con»</strong> — плотный список слева + инспектор / QR-мастер</li>
+        <li><strong>C · «Капсульные кластеры + QR-остров»</strong> — группы по подпискам + модальный QR</li>
+      </ul>
+      <a class="open-btn" href="02_servers_and_subscriptions.html">
+        <span>Открыть интерактивный макет</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </a>
+    </article>
+
+    <article class="card">
+      <div class="thumb-wrap">
+        <img src="screenshots/03_rules_overlay.png" alt="Превью правил, настроек и Tesla-оверлея Yumi NX">
+      </div>
+      <div class="card-title-row">
+        <h2>03 · Правила, настройки и Оверлей</h2>
+        <span class="tag">3 варианта</span>
+      </div>
+      <ul class="variants-list">
+        <li><strong>A · «Категории + Нативный Tesla HUD»</strong> — разделы слева + привычный компактный оверлей</li>
+        <li><strong>B · «Журнал ↔ Свои правила + Expressive»</strong> — правило в 1 клик + спарклайн скорости в HUD</li>
+        <li><strong>C · «Налегке / Под капотом + Остров»</strong> — два уровня сложности + минимальное перекрытие YouTube</li>
+      </ul>
+      <a class="open-btn" href="03_rules_settings_and_overlay.html">
+        <span>Открыть интерактивный макет</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </a>
+    </article>
+  </main>
+
+  <section class="rec">
+    <div>
+      <h3>Утверждённая база для переноса в NanoVG + Yoga и libtesla</h3>
+      <p>
+        <strong>Главная и навигация: Вариант B («Портативный кокпит»)</strong> с триггерами <code>L / R</code> на 92px рельсе ·
+        <strong>Серверы и QR: Вариант B («Мастер-деталь под Joy-Con»)</strong> со стеком <code>28/8/4px</code> и инспектором параметров ·
+        <strong>Правила, настройки и оверлей: Вариант A («Категории настроек + Нативный Tesla HUD»)</strong> поверх плеера YouTube.
+      </p>
+    </div>
+    <a class="pill accent" href="yumi_nx_final_mockup.html" style="text-decoration:none">Открыть единый макет →</a>
+  </section>
+</div>
+</body>
+</html>
