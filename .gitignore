@@ -19,6 +19,9 @@ exefs/
 *.zip
 *.part
 
+# Local design workspace (keep local only)
+design_mockups/
+
 # IDE / OS
 .vscode/
 .idea/
