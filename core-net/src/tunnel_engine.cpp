@@ -97,10 +97,15 @@ bool TunnelEngine::Start(const ProxyNode& node,
 
     if (spawn_thread) {
 #ifdef __SWITCH__
-        if (R_FAILED(threadCreate(&thread_, &TunnelEngine::ThreadEntry, this, thread_stack_, sizeof(thread_stack_), 0x3B, -2)) ||
-            R_FAILED(threadStart(&thread_))) {
+        if (R_FAILED(threadCreate(&thread_, &TunnelEngine::ThreadEntry, this, thread_stack_, sizeof(thread_stack_), 0x3B, -2))) {
             Stop();
-            Log(LogLevel::Error, "TunnelEngine: thread start failed");
+            Log(LogLevel::Error, "TunnelEngine: threadCreate failed");
+            return false;
+        }
+        if (R_FAILED(threadStart(&thread_))) {
+            threadClose(&thread_);
+            Stop();
+            Log(LogLevel::Error, "TunnelEngine: threadStart failed");
             return false;
         }
         thread_started_ = true;
@@ -121,6 +126,7 @@ void TunnelEngine::Stop() noexcept {
     stop_requested_.store(true);
 #ifdef __SWITCH__
     if (thread_started_) {
+        svcCancelSynchronization(thread_.handle);
         threadWaitForExit(&thread_);
         threadClose(&thread_);
         thread_started_ = false;
@@ -298,7 +304,6 @@ void TunnelEngine::PumpFlows(int timeout_ms) noexcept {
     uint64_t delta_up = 0;
     uint64_t delta_down = 0;
     std::vector<bool> drop(flows_.size(), false);
-    uint8_t scratch[8192];
 
     for (const auto& m : map) {
         auto* f = flows_[m.flow_idx].get();
@@ -306,9 +311,9 @@ void TunnelEngine::PumpFlows(int timeout_ms) noexcept {
 
         // 1. Read client -> c2s_buf
         if (!f->client_eof && (f->c2s_buf.size() - f->c2s_off < kIoBufCap)) {
-            const auto r = f->client.RecvSome(scratch, std::min<size_t>(sizeof(scratch), kIoBufCap - (f->c2s_buf.size() - f->c2s_off)));
+            const auto r = f->client.RecvSome(io_scratch_, std::min<size_t>(sizeof(io_scratch_), kIoBufCap - (f->c2s_buf.size() - f->c2s_off)));
             if (r.status == IoStatus::Ok && r.bytes > 0) {
-                f->c2s_buf.insert(f->c2s_buf.end(), scratch, scratch + r.bytes);
+                f->c2s_buf.insert(f->c2s_buf.end(), io_scratch_, io_scratch_ + r.bytes);
             } else if (r.status == IoStatus::Eof) {
                 f->client_eof = true;
             } else if (r.status == IoStatus::Error) {
@@ -337,9 +342,9 @@ void TunnelEngine::PumpFlows(int timeout_ms) noexcept {
 
         // 3. Read outbound -> s2c_buf
         if (!drop[m.flow_idx] && f->outbound && !f->remote_eof && (f->s2c_buf.size() - f->s2c_off < kIoBufCap)) {
-            const auto r = f->outbound->ReadNonBlocking(scratch, std::min<size_t>(sizeof(scratch), kIoBufCap - (f->s2c_buf.size() - f->s2c_off)));
+            const auto r = f->outbound->ReadNonBlocking(io_scratch_, std::min<size_t>(sizeof(io_scratch_), kIoBufCap - (f->s2c_buf.size() - f->s2c_off)));
             if (r.status == IoStatus::Ok && r.bytes > 0) {
-                f->s2c_buf.insert(f->s2c_buf.end(), scratch, scratch + r.bytes);
+                f->s2c_buf.insert(f->s2c_buf.end(), io_scratch_, io_scratch_ + r.bytes);
             } else if (r.status == IoStatus::Eof) {
                 f->remote_eof = true;
             } else if (r.status == IoStatus::Error) {

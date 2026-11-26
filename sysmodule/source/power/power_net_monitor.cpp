@@ -78,6 +78,9 @@ bool PowerNetMonitor::Start() noexcept {
 void PowerNetMonitor::Stop() noexcept {
     if (thread_created_) {
         stop_requested_.store(true);
+        if (thread_.handle != INVALID_HANDLE) {
+            svcCancelSynchronization(thread_.handle);
+        }
         threadWaitForExit(&thread_);
         threadClose(&thread_);
         thread_created_ = false;

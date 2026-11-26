@@ -1,5 +1,6 @@
 #define TESLA_INIT_IMPL
 #include <tesla.hpp>
+#include <switch/sf/tipc.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -13,6 +14,19 @@
 namespace {
 
 using namespace yumi_nx;
+
+/// Non-blocking Atmosphère AtmosphereHasService (TIPC 65100) probe so Tesla overlay
+/// never hangs indefinitely in smGetService when yumi-sysmodule is stopped.
+bool SmHasService(const char* name) noexcept {
+    TipcService* sm = smGetServiceSessionTipc();
+    if (!sm || sm->session == INVALID_HANDLE) return false;
+    const SmServiceName encoded = smEncodeName(name);
+    u8 has_service = 0;
+    const TipcDispatchParams params{};
+    const Result rc = tipcDispatchImpl(
+        sm, 65100u, &encoded, sizeof(encoded), &has_service, sizeof(has_service), params);
+    return R_SUCCEEDED(rc) && (has_service & 1u) != 0;
+}
 
 struct QuickNodeEntry {
     std::string id;
@@ -80,14 +94,21 @@ public:
         auto* hud_card = new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer* r, s32 x, s32 y, s32 w, s32 h) {
             r->drawRect(x + 6, y + 6, w - 12, h - 12, tsl::Color{0x2, 0x2, 0x3, 0xD});
 
-            const bool is_on = status_.state == TunnelState::On;
-            const double used_mb = stats_.sysmodule_heap_used_bytes / (1024.0 * 1024.0);
-            const double total_mb = std::max(2.0, stats_.sysmodule_heap_total_bytes / (1024.0 * 1024.0));
-            const double pct = std::min(1.0, used_mb / 5.5);
+            const bool connected = serviceIsActive(&ctl_);
+            const bool is_on = connected && status_.state == TunnelState::On;
+            const double used_mb = connected ? (stats_.sysmodule_heap_used_bytes / (1024.0 * 1024.0)) : 0.0;
+            const double total_mb = (connected && stats_.sysmodule_heap_total_bytes > 0)
+                ? (stats_.sysmodule_heap_total_bytes / (1024.0 * 1024.0))
+                : 1.5;
+            const double pct = connected ? std::min(1.0, used_mb / std::max(0.5, total_mb)) : 0.0;
 
             char ram_line[48];
-            std::snprintf(ram_line, sizeof(ram_line), "%.1f / %.1f MB (%d%%)",
-                          used_mb, total_mb, static_cast<int>(pct * 100.0));
+            if (connected) {
+                std::snprintf(ram_line, sizeof(ram_line), "%.2f / %.1f MB (%d%%)",
+                              used_mb, total_mb, static_cast<int>(pct * 100.0));
+            } else {
+                std::snprintf(ram_line, sizeof(ram_line), "sysmodule выкл");
+            }
             r->drawString("RAM sysmodule", false, x + 18, y + 32, 16, tsl::Color{0xF, 0xF, 0xF, 0xF});
             r->drawString(ram_line, true, x + w - 175, y + 32, 16, tsl::Color{0xA, 0xC, 0xF, 0xF});
 
@@ -103,8 +124,10 @@ public:
                 std::snprintf(spd_line, sizeof(spd_line), "%.1f / %.1f MB/s",
                               stats_.downlink_bps / (1024.0 * 1024.0),
                               stats_.uplink_bps / (1024.0 * 1024.0));
-            } else {
+            } else if (connected) {
                 std::snprintf(spd_line, sizeof(spd_line), "0 / 0 B/s  [%s]", ToString(status_.state));
+            } else {
+                std::snprintf(spd_line, sizeof(spd_line), "Нет связи с yumi:ctl");
             }
             r->drawString(spd_line, true, x + 18, y + 80, 15, tsl::Color{0xA, 0xB, 0xC, 0xF});
             r->drawString(is_on ? "ON" : "OFF", true, x + w - 58, y + 80, 15,
@@ -171,8 +194,17 @@ public:
     }
 
 private:
+    void DisconnectCtl() noexcept {
+        if (serviceIsActive(&ctl_)) {
+            serviceClose(&ctl_);
+        }
+        status_ = ipc::IpcStatus{};
+        stats_ = ipc::IpcTrafficStats{};
+    }
+
     bool EnsureConnected() {
         if (serviceIsActive(&ctl_)) return true;
+        if (!SmHasService(ipc::kYumiCtlServiceName)) return false;
         return R_SUCCEEDED(smGetService(&ctl_, ipc::kYumiCtlServiceName));
     }
 
@@ -182,25 +214,31 @@ private:
             if (active_fallback_item_) active_fallback_item_->setValue("sysmodule выкл");
             return;
         }
-        if (CallCtlOut(ctl_, ipc::YumiCtlCmd::GetStatus, status_)) {
-            toggle_item_->setState(status_.state == TunnelState::On ||
-                                   status_.state == TunnelState::Connecting);
-            mode_item_->setValue(ToString(status_.routing_mode));
-            if (active_fallback_item_) {
-                active_fallback_item_->setValue(status_.active_node_name[0] ? status_.active_node_name : "-");
-            }
-            for (size_t i = 0; i < quick_nodes_.size() && i < quick_items_.size(); ++i) {
-                char pbuf[32];
-                const bool active = (quick_nodes_[i].id == status_.active_node_id);
-                if (quick_nodes_[i].ping_ms >= 0) {
-                    std::snprintf(pbuf, sizeof(pbuf), active ? "* %d ms" : "%d ms", quick_nodes_[i].ping_ms);
-                } else {
-                    std::snprintf(pbuf, sizeof(pbuf), active ? "*" : "-");
-                }
-                quick_items_[i]->setValue(pbuf, !active);
-            }
+        if (!CallCtlOut(ctl_, ipc::YumiCtlCmd::GetStatus, status_)) {
+            DisconnectCtl();
+            toggle_item_->setState(false);
+            if (active_fallback_item_) active_fallback_item_->setValue("sysmodule выкл");
+            return;
         }
-        CallCtlOut(ctl_, ipc::YumiCtlCmd::GetTrafficStats, stats_);
+        toggle_item_->setState(status_.state == TunnelState::On ||
+                               status_.state == TunnelState::Connecting);
+        mode_item_->setValue(ToString(status_.routing_mode));
+        if (active_fallback_item_) {
+            active_fallback_item_->setValue(status_.active_node_name[0] ? status_.active_node_name : "-");
+        }
+        for (size_t i = 0; i < quick_nodes_.size() && i < quick_items_.size(); ++i) {
+            char pbuf[32];
+            const bool active = (quick_nodes_[i].id == status_.active_node_id);
+            if (quick_nodes_[i].ping_ms >= 0) {
+                std::snprintf(pbuf, sizeof(pbuf), active ? "* %d ms" : "%d ms", quick_nodes_[i].ping_ms);
+            } else {
+                std::snprintf(pbuf, sizeof(pbuf), active ? "*" : "-");
+            }
+            quick_items_[i]->setValue(pbuf, !active);
+        }
+        if (!CallCtlOut(ctl_, ipc::YumiCtlCmd::GetTrafficStats, stats_)) {
+            DisconnectCtl();
+        }
     }
 
     Service ctl_{};

@@ -259,7 +259,7 @@ void YumiUiApp::InitSeedData() {
     settings_.routing_mode = RoutingMode::Rules;
     settings_.block_quic = true;
     settings_.resolve_server_address = true;
-    settings_.auto_connect_on_boot = true;
+    settings_.auto_connect_on_boot = false;
     settings_.split_tunnel_mode = SplitTunnelMode::AllowList;
     settings_.split_tunnel_title_ids = {0x01003A400C3DA000ULL, 0x010000000000100FULL};
     settings_.fragment_mode = FragmentMode::TlsHello;
@@ -619,12 +619,22 @@ void YumiUiApp::Shutdown(NVGcontext*) {
 void YumiUiApp::RefreshFromCtl(bool force) {
     ctl_connected_ = ctl_.IsConnected();
     if (!ctl_connected_) {
-        if (force) status_ = ipc::IpcStatus{};
+        if (force) {
+            status_ = ipc::IpcStatus{};
+            stats_ = ipc::IpcTrafficStats{};
+            version_info_ = ipc::IpcVersionInfo{};
+        }
         return;
     }
-    ctl_.GetVersion(version_info_);
-    ctl_.GetStatus(status_);
-    ctl_.GetTrafficStats(stats_);
+    if (!ctl_.GetVersion(version_info_) ||
+        !ctl_.GetStatus(status_) ||
+        !ctl_.GetTrafficStats(stats_)) {
+        ctl_connected_ = false;
+        status_ = ipc::IpcStatus{};
+        stats_ = ipc::IpcTrafficStats{};
+        version_info_ = ipc::IpcVersionInfo{};
+        return;
+    }
 
     std::vector<ipc::IpcConnectionRecord> recs;
     if (ctl_.GetConnectionLog(last_conn_seq_, recs) && !recs.empty()) {
@@ -1386,10 +1396,15 @@ void YumiUiApp::Update(double dt_sec, const UiInputState& input) {
     // Smooth swells for wave/planet animation
     const bool is_conn = status_.state == TunnelState::On;
     const bool is_warm = status_.state == TunnelState::Connecting;
+    if (is_conn) {
+        connected_elapsed_sec_ += dt_sec;
+    } else {
+        connected_elapsed_sec_ = 0.0;
+    }
     const float down_mib = is_conn ? static_cast<float>(stats_.downlink_bps) / (1024.0f * 1024.0f) : 0.0f;
     const float up_mib = is_conn ? static_cast<float>(stats_.uplink_bps) / (1024.0f * 1024.0f) : 0.0f;
-    const float target_d = is_warm ? 0.45f : (is_conn ? PaceOfMibPerSec(std::max(1.8f, down_mib)) : 0.0f);
-    const float target_u = is_warm ? 0.30f : (is_conn ? PaceOfMibPerSec(std::max(0.2f, up_mib)) : 0.0f);
+    const float target_d = is_warm ? 0.45f : (is_conn ? std::max(0.22f, PaceOfMibPerSec(down_mib)) : 0.0f);
+    const float target_u = is_warm ? 0.30f : (is_conn ? std::max(0.12f, PaceOfMibPerSec(up_mib)) : 0.0f);
     const float rate = std::min(1.0f, static_cast<float>(dt_sec) * 1.6f);
     down_swell_ += (target_d - down_swell_) * rate;
     up_swell_ += (target_u - up_swell_) * rate;
@@ -1511,6 +1526,19 @@ bool YumiUiApp::IsSubEnabled(const std::string& sub_id) const {
         if (s.id == sub_id) return s.enabled;
     }
     return true;
+}
+
+uint64_t YumiUiApp::ActiveConnectedSeconds() const noexcept {
+    if (status_.state != TunnelState::On) return 0;
+#ifdef __SWITCH__
+    if (status_.connected_at_epoch_sec > 0) {
+        const uint64_t now_sec = net::MonotonicMs() / 1000ULL;
+        if (now_sec >= status_.connected_at_epoch_sec) {
+            return now_sec - status_.connected_at_epoch_sec;
+        }
+    }
+#endif
+    return static_cast<uint64_t>(std::max(0.0, connected_elapsed_sec_));
 }
 
 std::vector<int> YumiUiApp::FilteredServerIndices() const {
@@ -1652,16 +1680,21 @@ void YumiUiApp::RenderConnectTab(NVGcontext* vg) {
     char detail[128];
     if (is_conn) {
         std::snprintf(detail, sizeof(detail), "%s · %s", srv.name.c_str(),
-                      FormatDuration(static_cast<uint64_t>(anim_sec_) + 260).c_str());
+                      FormatDuration(ActiveConnectedSeconds()).c_str());
     } else if (is_busy) {
         std::snprintf(detail, sizeof(detail), "%s · Рукопожатие %s", srv.name.c_str(), srv.transport_label.c_str());
+    } else if (srv.ping_ms >= 0) {
+        std::snprintf(detail, sizeof(detail), "%s · %d ms", srv.name.c_str(), srv.ping_ms);
     } else {
-        std::snprintf(detail, sizeof(detail), "%s · %d ms", srv.name.c_str(), srv.ping_ms >= 0 ? srv.ping_ms : 34);
+        std::snprintf(detail, sizeof(detail), "%s · %s", srv.name.c_str(), srv.proto_label.c_str());
     }
     DrawTextClipped(vg, kWorkX + 4.0f, kWorkY + 66.0f, kCenterW - 210.0f, font_semibold_, 15.5f,
                     theme_.on_surface_variant, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, detail);
 
-    const char* ctl_chip = ctl_connected_ ? "Подключение · yumi:ctl" : "yumi:ctl ожидание";
+    const bool bsd_mitm_ok = (version_info_.mitm_active & ipc::mitm_flag::kBsdMitmActive) != 0;
+    const char* ctl_chip = !ctl_connected_ ? "sysmodule выкл"
+                         : bsd_mitm_ok     ? "yumi:ctl · MITM"
+                                           : "yumi:ctl · без MITM";
     DrawRoundedBox(vg, kWorkX + kCenterW - 190.0f, kWorkY + 46.0f, 190.0f, 34.0f, 17.0f, theme_.surface_container);
     DrawTextClipped(vg, kWorkX + kCenterW - 95.0f, kWorkY + 63.0f, 176.0f, font_semibold_, 12.5f,
                     theme_.on_surface_variant, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE, ctl_chip);
@@ -1699,8 +1732,8 @@ void YumiUiApp::RenderConnectTab(NVGcontext* vg) {
     const float sx = vx - 232.0f - 8.0f;
     DrawRoundedBox(vg, sx, ly, 232.0f, 36.0f, 18.0f, theme_.surface_high);
     char spd_d[32], spd_u[32];
-    std::snprintf(spd_d, sizeof(spd_d), "↓ %s", FormatRateMib(is_conn ? std::max<uint64_t>(stats_.downlink_bps, 14800000ULL) : 0).c_str());
-    std::snprintf(spd_u, sizeof(spd_u), "↑ %s", FormatRateMib(is_conn ? std::max<uint64_t>(stats_.uplink_bps, 1150000ULL) : 0).c_str());
+    std::snprintf(spd_d, sizeof(spd_d), "↓ %s", FormatRateMib(is_conn ? stats_.downlink_bps : 0).c_str());
+    std::snprintf(spd_u, sizeof(spd_u), "↑ %s", FormatRateMib(is_conn ? stats_.uplink_bps : 0).c_str());
     DrawTextClipped(vg, sx + 14.0f, ly + 18.0f, 104.0f, font_mono_, 12.5f, theme_.primary, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, spd_d);
     DrawTextClipped(vg, sx + 124.0f, ly + 18.0f, 96.0f, font_mono_, 12.5f, theme_.tertiary, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, spd_u);
 
@@ -1765,7 +1798,7 @@ void YumiUiApp::RenderConnectTab(NVGcontext* vg) {
     char hsub[64];
     if (is_conn) {
         std::snprintf(hsub, sizeof(hsub), "%s · %s",
-                      FormatDuration(static_cast<uint64_t>(anim_sec_) + 260).c_str(), srv.transport_label.c_str());
+                      FormatDuration(ActiveConnectedSeconds()).c_str(), srv.transport_label.c_str());
     } else {
         std::snprintf(hsub, sizeof(hsub), "%s · %s", srv.proto_label.c_str(), srv.transport_label.c_str());
     }
@@ -1804,12 +1837,23 @@ void YumiUiApp::RenderConnectTab(NVGcontext* vg) {
     const char* hos_lbl = (version_info_.hos_generation == ipc::HosGeneration::Hos19) ? "HOS 19.x" : "HOS 20.0+";
     DrawTextClipped(vg, kRightX + kRightW - 18.0f, c2y + 20.0f, 100.0f, font_semibold_, 10.5f,
                     theme_.on_surface_variant, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE, hos_lbl);
-    const double used_mb = static_cast<double>(stats_.sysmodule_heap_used_bytes) / (1024.0 * 1024.0);
-    const double total_mb = std::max(2.0, static_cast<double>(stats_.sysmodule_heap_total_bytes) / (1024.0 * 1024.0));
-    const float ratio = static_cast<float>(std::clamp(used_mb / 5.5, 0.05, 1.0));
+    const double used_mb = ctl_connected_
+        ? (static_cast<double>(stats_.sysmodule_heap_used_bytes) / (1024.0 * 1024.0))
+        : 0.0;
+    const double total_mb = (ctl_connected_ && stats_.sysmodule_heap_total_bytes > 0)
+        ? (static_cast<double>(stats_.sysmodule_heap_total_bytes) / (1024.0 * 1024.0))
+        : 1.5;
+    const float ratio = ctl_connected_
+        ? static_cast<float>(std::clamp(used_mb / std::max(0.5, total_mb), 0.0, 1.0))
+        : 0.0f;
     char ram_buf[48], pct_buf[16];
-    std::snprintf(ram_buf, sizeof(ram_buf), "%.1f / %.1f MB", used_mb > 0.05 ? used_mb : 3.4, total_mb >= 5.0 ? total_mb : 5.5);
-    std::snprintf(pct_buf, sizeof(pct_buf), "%d%%", static_cast<int>(std::round(ratio * 100.0f)));
+    if (ctl_connected_) {
+        std::snprintf(ram_buf, sizeof(ram_buf), "%.2f / %.1f MB", used_mb, total_mb);
+        std::snprintf(pct_buf, sizeof(pct_buf), "%d%%", static_cast<int>(std::round(ratio * 100.0f)));
+    } else {
+        std::snprintf(ram_buf, sizeof(ram_buf), "sysmodule выкл");
+        std::snprintf(pct_buf, sizeof(pct_buf), "—");
+    }
     DrawTextClipped(vg, kRightX + 18.0f, c2y + 49.0f, 210.0f, font_mono_, 18.0f,
                     theme_.on_surface, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, ram_buf);
     DrawTextClipped(vg, kRightX + kRightW - 18.0f, c2y + 49.0f, 70.0f, font_mono_, 13.0f,
@@ -2634,22 +2678,40 @@ void YumiUiApp::RenderSettingsTab(NVGcontext* vg) {
         DrawTextClipped(vg, c2x + 16.0f, gy + 24.0f, cw - 32.0f, font_semibold_, 16.0f, theme_.on_surface,
                         NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, "Память sysmodule");
         DrawTextClipped(vg, c2x + 16.0f, gy + 46.0f, cw - 32.0f, font_regular_, 12.5f, theme_.on_surface_variant,
-                        NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, "Лимит HOS 20.0+ (5.5 MB heap)");
-        const float r_mb = static_cast<float>(stats_.sysmodule_heap_used_bytes) / (1024.0f * 1024.0f);
-        const float r_shown = (r_mb > 0.05f) ? r_mb : 3.4f;
-        const float r_frac = std::clamp(r_shown / 5.5f, 0.05f, 1.0f);
-        char sram2[32], spct[16];
-        std::snprintf(sram2, sizeof(sram2), "Занято: %.1f MB", r_shown);
-        std::snprintf(spct, sizeof(spct), "%d%%", static_cast<int>(std::round(r_frac * 100.0f)));
-        DrawTextClipped(vg, c2x + 16.0f, gy + 114.0f, 200.0f, font_mono_, 17.0f, theme_.on_surface,
+                        NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, "Куча sysmodule (HOS 20.0+)");
+        const float r_mb = ctl_connected_
+            ? (static_cast<float>(stats_.sysmodule_heap_used_bytes) / (1024.0f * 1024.0f))
+            : 0.0f;
+        const float r_total = (ctl_connected_ && stats_.sysmodule_heap_total_bytes > 0)
+            ? (static_cast<float>(stats_.sysmodule_heap_total_bytes) / (1024.0f * 1024.0f))
+            : 1.5f;
+        const float r_frac = ctl_connected_
+            ? std::clamp(r_mb / std::max(0.5f, r_total), 0.0f, 1.0f)
+            : 0.0f;
+        char sram2[48], spct[16];
+        if (ctl_connected_) {
+            std::snprintf(sram2, sizeof(sram2), "Занято: %.2f / %.1f MB", r_mb, r_total);
+            std::snprintf(spct, sizeof(spct), "%d%%", static_cast<int>(std::round(r_frac * 100.0f)));
+        } else {
+            std::snprintf(sram2, sizeof(sram2), "sysmodule не запущен");
+            std::snprintf(spct, sizeof(spct), "—");
+        }
+        DrawTextClipped(vg, c2x + 16.0f, gy + 114.0f, 220.0f, font_mono_, 17.0f, theme_.on_surface,
                         NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, sram2);
         DrawTextClipped(vg, c2x + cw - 16.0f, gy + 114.0f, 70.0f, font_mono_, 16.0f, theme_.primary,
                         NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE, spct);
         DrawRoundedBox(vg, c2x + 16.0f, gy + 138.0f, cw - 32.0f, 12.0f, 6.0f, theme_.surface_highest);
         DrawRoundedBox(vg, c2x + 16.0f, gy + 138.0f, (cw - 32.0f) * r_frac, 12.0f, 6.0f, theme_.primary);
+        const bool has_bsd = (version_info_.mitm_active & ipc::mitm_flag::kBsdMitmActive) != 0;
+        const bool has_dns = (version_info_.mitm_active & ipc::mitm_flag::kSfdnsresMitmActive) != 0;
+        const char* mitm_lbl = !ctl_connected_       ? "нет связи"
+                             : (has_bsd && has_dns)  ? "bsd:u + sfdnsres"
+                             : has_bsd               ? "bsd:u"
+                             : has_dns               ? "sfdnsres"
+                                                     : "отключён";
         char sock_info[64];
-        std::snprintf(sock_info, sizeof(sock_info), "Сокетов: %u · MITM bsd:u + sfdnsres",
-                      stats_.active_sockets);
+        std::snprintf(sock_info, sizeof(sock_info), "Сокетов: %u · MITM: %s",
+                      ctl_connected_ ? stats_.active_sockets : 0u, mitm_lbl);
         DrawTextClipped(vg, c2x + 16.0f, gy + 174.0f, cw - 32.0f, font_regular_, 12.5f,
                         theme_.on_surface_variant, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE, sock_info);
 

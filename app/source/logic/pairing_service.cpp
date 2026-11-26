@@ -281,18 +281,16 @@ bool PairingServer::Start(std::string advertise_host,
 
 void PairingServer::Stop() noexcept {
     stop_requested_.store(true);
+    // Join worker BEFORE closing listener_ so Switch bsdClose never races with an active bsdPoll(fd).
+    worker_.Join();
     {
         SimpleLock lk(mu_);
         listener_.Close();
-    }
-    worker_.Join();
-    running_.store(false);
-    {
-        SimpleLock lk(mu_);
         if (state_ == PairingServerState::Listening || state_ == PairingServerState::AwaitingConfirm) {
             state_ = PairingServerState::Idle;
         }
     }
+    running_.store(false);
 }
 
 void PairingServer::SubmitDecision(bool accept, std::string status_override) {
@@ -346,7 +344,9 @@ void PairingServer::RunLoop() {
         net::PollItem p{};
         p.fd = fd;
         p.want_read = true;
-        if (net::PollSockets(&p, 1, 100) <= 0 || !p.rev_read) continue;
+        const int poll_rc = net::PollSockets(&p, 1, 100);
+        if (stop_requested_.load()) break;
+        if (poll_rc <= 0 || !p.rev_read) continue;
 
         net::NetSocket cli;
         {

@@ -226,6 +226,7 @@ private:
     [[nodiscard]] std::vector<int> FilteredServerIndices() const;
     [[nodiscard]] int CountCustomRules() const;
     [[nodiscard]] bool IsSubEnabled(const std::string& sub_id) const;
+    [[nodiscard]] uint64_t ActiveConnectedSeconds() const noexcept;
 
     ipc::IYumiCtlClient& ctl_;
     std::string font_dir_;
@@ -292,13 +293,14 @@ private:
 
     bool phone_scanned_ = false;
     bool sd_imported_ = false;
-    std::string speedtest_result_ = "94.6 Mbps · 34 ms";
+    std::string speedtest_result_ = "Не замерялось";
     std::string update_status_ = "v1.0.0 · Актуально";
 
     QrMatrix qr_pair_{};
     QrMatrix qr_remote_{};
 
     double anim_sec_ = 0.0;
+    double connected_elapsed_sec_ = 0.0;
     double poll_timer_ = 0.0;
     float down_swell_ = 0.72f;
     float up_swell_ = 0.36f;

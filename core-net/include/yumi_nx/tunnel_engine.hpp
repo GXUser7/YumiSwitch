@@ -95,12 +95,14 @@ private:
     static void ThreadEntry(void* arg);
     Mutex state_mutex_{};
     Thread thread_{};
-    alignas(0x1000) uint8_t thread_stack_[0x6000] = {};  // 24 KB for TLS handshake + poll
+    alignas(0x1000) uint8_t thread_stack_[0x8000] = {};  // 32 KB for TLS handshake + poll
     bool thread_started_ = false;
 #else
     std::mutex state_mutex_;
     std::thread worker_;
 #endif
+
+    alignas(16) uint8_t io_scratch_[8192] = {};
 
     void Lock() noexcept;
     void Unlock() noexcept;

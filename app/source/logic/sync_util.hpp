@@ -115,8 +115,12 @@ public:
 #ifdef __SWITCH__
         void* stack = ::memalign(0x1000, stack_bytes);
         if (!stack) return false;
-        if (R_FAILED(threadCreate(&thread_, fn, arg, stack, stack_bytes, 0x3B, -2)) ||
-            R_FAILED(threadStart(&thread_))) {
+        if (R_FAILED(threadCreate(&thread_, fn, arg, stack, stack_bytes, 0x3B, -2))) {
+            std::free(stack);
+            return false;
+        }
+        if (R_FAILED(threadStart(&thread_))) {
+            threadClose(&thread_);
             std::free(stack);
             return false;
         }

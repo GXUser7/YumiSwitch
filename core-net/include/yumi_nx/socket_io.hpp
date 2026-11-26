@@ -35,8 +35,9 @@ struct PollItem {
     bool rev_err = false;
 };
 
-/// Initializes Winsock (Windows) or Switch BSD socket driver (lean memory footprint).
-bool SocketLayerInit() noexcept;
+/// Initializes Winsock (Windows) or Switch BSD socket driver.
+/// Pass `low_memory = true` in sysmodule builds to minimize HOS transfer memory usage.
+bool SocketLayerInit(bool low_memory = false) noexcept;
 void SocketLayerShutdown() noexcept;
 
 /// Monotonic millisecond clock.

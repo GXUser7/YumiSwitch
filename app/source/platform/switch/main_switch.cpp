@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 
@@ -12,6 +14,7 @@
 
 #include "switch_ctl_client.hpp"
 #include "ui_app.hpp"
+#include "yumi_nx/crypto.hpp"
 #include "yumi_nx/paths.hpp"
 #include "yumi_nx/socket_io.hpp"
 
@@ -20,6 +23,21 @@ namespace {
 EGLDisplay s_display = EGL_NO_DISPLAY;
 EGLContext s_context = EGL_NO_CONTEXT;
 EGLSurface s_surface = EGL_NO_SURFACE;
+std::atomic<bool> s_in_focus{true};
+
+void OnAppletHook(AppletHookType hook, void*) {
+    switch (hook) {
+        case AppletHookType_OnFocusState:
+        case AppletHookType_OnResume:
+            s_in_focus.store(appletGetFocusState() == AppletFocusState_InFocus);
+            break;
+        case AppletHookType_OnExitRequest:
+            s_in_focus.store(false);
+            break;
+        default:
+            break;
+    }
+}
 
 bool InitEgl(NWindow* win) {
     s_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -76,14 +94,14 @@ void DeinitEgl() {
     }
 }
 
-void UpdateWindowResolution(NWindow* win, u32& cur_w, u32& cur_h) {
+void InitWindowResolution(NWindow* win, u32& out_w, u32& out_h) {
+    // Configure NWindow dimensions ONCE before EGL configures buffer slots;
+    // vi handles dynamic docked/handheld scaling via ViScalingMode_FitToLayer.
     const AppletOperationMode mode = appletGetOperationMode();
-    const u32 target_w = (mode == AppletOperationMode_Console) ? 1920u : 1280u;
-    const u32 target_h = (mode == AppletOperationMode_Console) ? 1080u : 720u;
-    if (target_w != cur_w || target_h != cur_h) {
-        nwindowSetDimensions(win, target_w, target_h);
-        cur_w = target_w;
-        cur_h = target_h;
+    out_w = (mode == AppletOperationMode_Console) ? 1920u : 1280u;
+    out_h = (mode == AppletOperationMode_Console) ? 1080u : 720u;
+    if (R_FAILED(nwindowSetDimensions(win, out_w, out_h))) {
+        nwindowGetDimensions(win, &out_w, &out_h);
     }
 }
 
@@ -91,12 +109,13 @@ void UpdateWindowResolution(NWindow* win, u32& cur_w, u32& cur_h) {
 
 extern "C" void userAppInit(void) {
     romfsInit();
-    yumi_nx::net::SocketLayerInit();
+    yumi_nx::net::SocketLayerInit(false);
     nifmInitialize(NifmServiceType_User);
     nsInitialize();
 }
 
 extern "C" void userAppExit(void) {
+    yumi_nx::net::crypto::RandomShutdown();
     nsExit();
     nifmExit();
     yumi_nx::net::SocketLayerShutdown();
@@ -104,13 +123,18 @@ extern "C" void userAppExit(void) {
 }
 
 int main(int, char**) {
+    AppletHookCookie applet_hook_cookie{};
+    s_in_focus.store(appletGetFocusState() == AppletFocusState_InFocus);
+    appletHook(&applet_hook_cookie, OnAppletHook, nullptr);
+
     NWindow* win = nwindowGetDefault();
-    u32 win_w = 0;
-    u32 win_h = 0;
-    UpdateWindowResolution(win, win_w, win_h);
+    u32 win_w = 1280u;
+    u32 win_h = 720u;
+    InitWindowResolution(win, win_w, win_h);
 
     if (!InitEgl(win)) {
         DeinitEgl();
+        appletUnhook(&applet_hook_cookie);
         return EXIT_FAILURE;
     }
     gladLoadGL();
@@ -118,6 +142,7 @@ int main(int, char**) {
     NVGcontext* vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
     if (!vg) {
         DeinitEgl();
+        appletUnhook(&applet_hook_cookie);
         return EXIT_FAILURE;
     }
 
@@ -134,11 +159,19 @@ int main(int, char**) {
     u64 prev_tick = armGetSystemTick();
 
     while (appletMainLoop()) {
-        const u64 now_tick = armGetSystemTick();
-        const double dt_sec = static_cast<double>(armTicksToNs(now_tick - prev_tick)) / 1e9;
-        prev_tick = now_tick;
+        // Avoid eglSwapBuffers / nwindowDequeueBuffer while unfocused (HOME menu / sleep),
+        // keeping the applet message pump responsive to FocusState and ExitRequest events.
+        if (!s_in_focus.load() || appletGetFocusState() != AppletFocusState_InFocus) {
+            svcSleepThread(50'000'000ULL);
+            prev_tick = armGetSystemTick();
+            prev_touch = false;
+            continue;
+        }
 
-        UpdateWindowResolution(win, win_w, win_h);
+        const u64 now_tick = armGetSystemTick();
+        const double raw_dt = static_cast<double>(armTicksToNs(now_tick - prev_tick)) / 1e9;
+        const double dt_sec = std::clamp(raw_dt, 0.0, 0.1);
+        prev_tick = now_tick;
 
         padUpdate(&pad);
         const u64 k_down = padGetButtonsDown(&pad);
@@ -181,7 +214,9 @@ int main(int, char**) {
     }
 
     app.Shutdown(vg);
+    ctl_client.Disconnect();
     nvgDeleteGL3(vg);
     DeinitEgl();
+    appletUnhook(&applet_hook_cookie);
     return EXIT_SUCCESS;
 }

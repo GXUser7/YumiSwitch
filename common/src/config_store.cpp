@@ -76,6 +76,45 @@ uint32_t Fnv1a32(const uint8_t* data, size_t len) noexcept {
     return hash;
 }
 
+// Type-safe JSON accessors: nlohmann::json::value() calls std::abort() on type mismatch under -fno-exceptions.
+bool JsonBool(const nlohmann::json& j, const char* key, bool def) noexcept {
+    const auto it = j.find(key);
+    return (it != j.end() && it->is_boolean()) ? it->get<bool>() : def;
+}
+
+std::string JsonStr(const nlohmann::json& j, const char* key, const std::string& def = {}) {
+    const auto it = j.find(key);
+    return (it != j.end() && it->is_string()) ? it->get<std::string>() : def;
+}
+
+int JsonInt(const nlohmann::json& j, const char* key, int def) noexcept {
+    const auto it = j.find(key);
+    return (it != j.end() && it->is_number_integer()) ? it->get<int>() : def;
+}
+
+uint16_t JsonU16(const nlohmann::json& j, const char* key, uint16_t def) noexcept {
+    const auto it = j.find(key);
+    if (it != j.end() && it->is_number_unsigned()) {
+        const uint64_t v = it->get<uint64_t>();
+        if (v <= 65535ULL) return static_cast<uint16_t>(v);
+    }
+    return def;
+}
+
+uint32_t JsonU32(const nlohmann::json& j, const char* key, uint32_t def) noexcept {
+    const auto it = j.find(key);
+    if (it != j.end() && it->is_number_unsigned()) {
+        const uint64_t v = it->get<uint64_t>();
+        if (v <= 0xFFFFFFFFULL) return static_cast<uint32_t>(v);
+    }
+    return def;
+}
+
+int64_t JsonI64(const nlohmann::json& j, const char* key, int64_t def) noexcept {
+    const auto it = j.find(key);
+    return (it != j.end() && it->is_number_integer()) ? it->get<int64_t>() : def;
+}
+
 }  // namespace
 
 std::vector<uint8_t> EncodeActiveNodeBinary(const ProxyNode& node) {
@@ -285,17 +324,17 @@ std::optional<AppSettings> DeserializeSettingsJson(const std::string& json_text)
         s.routing_mode = static_cast<RoutingMode>(
             clamp_enum(parsed["routing_mode"].get<uint8_t>(), 2, 1));
     }
-    s.bypass_lan = parsed.value("bypass_lan", s.bypass_lan);
-    s.block_ads = parsed.value("block_ads", s.block_ads);
-    s.block_quic = parsed.value("block_quic", s.block_quic);
-    s.enable_ipv6 = parsed.value("enable_ipv6", s.enable_ipv6);
+    s.bypass_lan = JsonBool(parsed, "bypass_lan", s.bypass_lan);
+    s.block_ads = JsonBool(parsed, "block_ads", s.block_ads);
+    s.block_quic = JsonBool(parsed, "block_quic", s.block_quic);
+    s.enable_ipv6 = JsonBool(parsed, "enable_ipv6", s.enable_ipv6);
 
-    s.remote_dns = parsed.value("remote_dns", s.remote_dns);
-    s.direct_dns = parsed.value("direct_dns", s.direct_dns);
-    s.hijack_dns = parsed.value("hijack_dns", s.hijack_dns);
-    s.dns_fallback = parsed.value("dns_fallback", s.dns_fallback);
-    s.resolve_server_address = parsed.value("resolve_server_address", s.resolve_server_address);
-    s.resolve_doh_url = parsed.value("resolve_doh_url", s.resolve_doh_url);
+    s.remote_dns = JsonStr(parsed, "remote_dns", s.remote_dns);
+    s.direct_dns = JsonStr(parsed, "direct_dns", s.direct_dns);
+    s.hijack_dns = JsonBool(parsed, "hijack_dns", s.hijack_dns);
+    s.dns_fallback = JsonBool(parsed, "dns_fallback", s.dns_fallback);
+    s.resolve_server_address = JsonBool(parsed, "resolve_server_address", s.resolve_server_address);
+    s.resolve_doh_url = JsonStr(parsed, "resolve_doh_url", s.resolve_doh_url);
 
     if (parsed.contains("tls_fingerprint") && parsed["tls_fingerprint"].is_number_unsigned()) {
         s.tls_fingerprint = static_cast<TlsFingerprint>(
@@ -309,11 +348,11 @@ std::optional<AppSettings> DeserializeSettingsJson(const std::string& json_text)
         s.fragment_scope = static_cast<FragmentScope>(
             clamp_enum(parsed["fragment_scope"].get<uint8_t>(), 2, 1));
     }
-    s.fragment_length = parsed.value("fragment_length", s.fragment_length);
-    s.fragment_interval = parsed.value("fragment_interval", s.fragment_interval);
-    s.fragment_max_chunks = parsed.value("fragment_max_chunks", s.fragment_max_chunks);
+    s.fragment_length = JsonStr(parsed, "fragment_length", s.fragment_length);
+    s.fragment_interval = JsonStr(parsed, "fragment_interval", s.fragment_interval);
+    s.fragment_max_chunks = JsonStr(parsed, "fragment_max_chunks", s.fragment_max_chunks);
 
-    s.auto_connect_on_boot = parsed.value("auto_connect_on_boot", s.auto_connect_on_boot);
+    s.auto_connect_on_boot = JsonBool(parsed, "auto_connect_on_boot", s.auto_connect_on_boot);
     if (parsed.contains("split_tunnel_mode") && parsed["split_tunnel_mode"].is_number_unsigned()) {
         s.split_tunnel_mode = static_cast<SplitTunnelMode>(
             clamp_enum(parsed["split_tunnel_mode"].get<uint8_t>(), 2, 0));
@@ -324,9 +363,9 @@ std::optional<AppSettings> DeserializeSettingsJson(const std::string& json_text)
         }
     }
 
-    s.device_id = parsed.value("device_id", s.device_id);
-    s.subscription_auto_update = parsed.value("subscription_auto_update", s.subscription_auto_update);
-    s.subscription_update_minutes = parsed.value("subscription_update_minutes", s.subscription_update_minutes);
+    s.device_id = JsonStr(parsed, "device_id", s.device_id);
+    s.subscription_auto_update = JsonBool(parsed, "subscription_auto_update", s.subscription_auto_update);
+    s.subscription_update_minutes = JsonInt(parsed, "subscription_update_minutes", s.subscription_update_minutes);
     if (parsed.contains("log_level") && parsed["log_level"].is_number_unsigned()) {
         s.log_level = static_cast<LogLevel>(
             clamp_enum(parsed["log_level"].get<uint8_t>(), 4, 2));
@@ -386,15 +425,15 @@ std::optional<std::vector<parse::SubscriptionRecord>> DeserializeSubscriptionsJs
     for (const auto& item : parsed) {
         if (!item.is_object()) continue;
         parse::SubscriptionRecord s;
-        s.id = item.value("id", std::string{});
-        s.name = item.value("name", std::string{});
-        s.remote_title = item.value("remote_title", std::string{});
-        s.url = item.value("url", std::string{});
-        s.user_agent_override = item.value("user_agent_override", std::string{});
-        s.enabled = item.value("enabled", true);
-        s.node_count = item.value("node_count", 0);
-        s.last_updated_epoch_ms = item.value("last_updated_epoch_ms", int64_t{0});
-        s.last_error = item.value("last_error", std::string{});
+        s.id = JsonStr(item, "id");
+        s.name = JsonStr(item, "name");
+        s.remote_title = JsonStr(item, "remote_title");
+        s.url = JsonStr(item, "url");
+        s.user_agent_override = JsonStr(item, "user_agent_override");
+        s.enabled = JsonBool(item, "enabled", true);
+        s.node_count = JsonInt(item, "node_count", 0);
+        s.last_updated_epoch_ms = JsonI64(item, "last_updated_epoch_ms", 0);
+        s.last_error = JsonStr(item, "last_error");
         if (item.contains("headers") && item["headers"].is_object()) {
             for (const auto& kv : item["headers"].items()) {
                 if (kv.value().is_string()) s.headers.emplace_back(kv.key(), kv.value().get<std::string>());
@@ -492,36 +531,36 @@ std::optional<std::vector<ProxyNode>> DeserializeNodesJson(const std::string& js
     for (const auto& j : parsed) {
         if (!j.is_object()) continue;
         ProxyNode n;
-        n.id = j.value("id", std::string{});
-        n.name = j.value("name", std::string{});
-        n.server = j.value("server", std::string{});
-        n.port = static_cast<uint16_t>(j.value("port", 443));
+        n.id = JsonStr(j, "id");
+        n.name = JsonStr(j, "name");
+        n.server = JsonStr(j, "server");
+        n.port = JsonU16(j, "port", 443);
         const uint8_t p = j.contains("protocol") && j["protocol"].is_number_unsigned()
             ? j["protocol"].get<uint8_t>() : 0;
         if (p <= static_cast<uint8_t>(Protocol::Direct)) n.protocol = static_cast<Protocol>(p);
-        n.uuid_or_user = j.value("uuid_or_user", std::string{});
-        n.password_or_key = j.value("password_or_key", std::string{});
-        n.method = j.value("method", std::string{});
-        n.flow = j.value("flow", std::string{});
-        n.packet_encoding = j.value("packet_encoding", std::string{"xudp"});
-        n.subscription_id = j.value("subscription_id", std::string{});
+        n.uuid_or_user = JsonStr(j, "uuid_or_user");
+        n.password_or_key = JsonStr(j, "password_or_key");
+        n.method = JsonStr(j, "method");
+        n.flow = JsonStr(j, "flow");
+        n.packet_encoding = JsonStr(j, "packet_encoding", "xudp");
+        n.subscription_id = JsonStr(j, "subscription_id");
         if (j.contains("tls") && j["tls"].is_object()) {
             const auto& t = j["tls"];
-            n.tls.enabled = t.value("enabled", false);
-            n.tls.server_name = t.value("server_name", std::string{});
-            n.tls.insecure = t.value("insecure", false);
-            n.tls.fingerprint = t.value("fingerprint", std::string{});
-            n.tls.pinned_cert_sha256 = t.value("pinned_cert_sha256", std::string{});
-            n.tls.verify_peer_cert_by_name = t.value("verify_peer_cert_by_name", std::string{});
+            n.tls.enabled = JsonBool(t, "enabled", false);
+            n.tls.server_name = JsonStr(t, "server_name");
+            n.tls.insecure = JsonBool(t, "insecure", false);
+            n.tls.fingerprint = JsonStr(t, "fingerprint");
+            n.tls.pinned_cert_sha256 = JsonStr(t, "pinned_cert_sha256");
+            n.tls.verify_peer_cert_by_name = JsonStr(t, "verify_peer_cert_by_name");
             if (t.contains("alpn") && t["alpn"].is_array()) {
                 for (const auto& a : t["alpn"]) if (a.is_string()) n.tls.alpn.push_back(a.get<std::string>());
             }
             if (t.contains("reality") && t["reality"].is_object()) {
                 const auto& r = t["reality"];
-                n.tls.reality.enabled = r.value("enabled", false);
-                n.tls.reality.public_key = r.value("public_key", std::string{});
-                n.tls.reality.short_id = r.value("short_id", std::string{});
-                n.tls.reality.spider_x = r.value("spider_x", std::string{"/"});
+                n.tls.reality.enabled = JsonBool(r, "enabled", false);
+                n.tls.reality.public_key = JsonStr(r, "public_key");
+                n.tls.reality.short_id = JsonStr(r, "short_id");
+                n.tls.reality.spider_x = JsonStr(r, "spider_x", "/");
             }
         }
         if (j.contains("transport") && j["transport"].is_object()) {
@@ -529,20 +568,20 @@ std::optional<std::vector<ProxyNode>> DeserializeNodesJson(const std::string& js
             const uint8_t tk = tr.contains("kind") && tr["kind"].is_number_unsigned()
                 ? tr["kind"].get<uint8_t>() : 0;
             if (tk <= static_cast<uint8_t>(TransportKind::Xhttp)) n.transport.kind = static_cast<TransportKind>(tk);
-            n.transport.path = tr.value("path", std::string{"/"});
-            n.transport.host = tr.value("host", std::string{});
-            n.transport.service_name = tr.value("service_name", std::string{});
-            n.transport.grpc_multi_mode = tr.value("grpc_multi_mode", false);
-            n.transport.grpc_authority = tr.value("grpc_authority", std::string{});
-            n.transport.xhttp_mode = tr.value("xhttp_mode", std::string{"auto"});
+            n.transport.path = JsonStr(tr, "path", "/");
+            n.transport.host = JsonStr(tr, "host");
+            n.transport.service_name = JsonStr(tr, "service_name");
+            n.transport.grpc_multi_mode = JsonBool(tr, "grpc_multi_mode", false);
+            n.transport.grpc_authority = JsonStr(tr, "grpc_authority");
+            n.transport.xhttp_mode = JsonStr(tr, "xhttp_mode", "auto");
         }
         if (j.contains("wireguard") && j["wireguard"].is_object()) {
             const auto& w = j["wireguard"];
-            n.wireguard.private_key = w.value("private_key", std::string{});
-            n.wireguard.peer_public_key = w.value("peer_public_key", std::string{});
-            n.wireguard.pre_shared_key = w.value("pre_shared_key", std::string{});
-            n.wireguard.mtu = static_cast<uint16_t>(w.value("mtu", 1408));
-            n.wireguard.has_reserved = w.value("has_reserved", false);
+            n.wireguard.private_key = JsonStr(w, "private_key");
+            n.wireguard.peer_public_key = JsonStr(w, "peer_public_key");
+            n.wireguard.pre_shared_key = JsonStr(w, "pre_shared_key");
+            n.wireguard.mtu = JsonU16(w, "mtu", 1408);
+            n.wireguard.has_reserved = JsonBool(w, "has_reserved", false);
             if (w.contains("local_addresses") && w["local_addresses"].is_array()) {
                 for (const auto& a : w["local_addresses"]) {
                     if (a.is_string()) n.wireguard.local_addresses.push_back(a.get<std::string>());
@@ -558,10 +597,10 @@ std::optional<std::vector<ProxyNode>> DeserializeNodesJson(const std::string& js
         }
         if (j.contains("hysteria2") && j["hysteria2"].is_object()) {
             const auto& h = j["hysteria2"];
-            n.hysteria2.obfs_type = h.value("obfs_type", std::string{});
-            n.hysteria2.obfs_password = h.value("obfs_password", std::string{});
-            n.hysteria2.up_mbps = h.value("up_mbps", uint32_t{0});
-            n.hysteria2.down_mbps = h.value("down_mbps", uint32_t{0});
+            n.hysteria2.obfs_type = JsonStr(h, "obfs_type");
+            n.hysteria2.obfs_password = JsonStr(h, "obfs_password");
+            n.hysteria2.up_mbps = JsonU32(h, "up_mbps", 0);
+            n.hysteria2.down_mbps = JsonU32(h, "down_mbps", 0);
         }
         if (!n.server.empty() && n.port > 0) out.push_back(std::move(n));
     }

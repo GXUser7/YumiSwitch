@@ -64,6 +64,8 @@ namespace sm_mitm_cmd {
 inline constexpr uint32_t kAtmosphereInstallMitm = 65000;
 inline constexpr uint32_t kAtmosphereUninstallMitm = 65001;
 inline constexpr uint32_t kAtmosphereAcknowledgeMitmSession = 65003;
+inline constexpr uint32_t kAtmosphereHasMitm = 65004;
+inline constexpr uint32_t kAtmosphereClearFutureMitm = 65007;
 inline constexpr uint32_t kQueryShouldMitm = 65000;
 }  // namespace sm_mitm_cmd
 

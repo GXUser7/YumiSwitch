@@ -76,6 +76,24 @@ Result SmAcknowledgeMitmSession(const char* service_name, MitmProcessInfo& out_i
     return rc;
 }
 
+Result SmHasMitm(const char* service_name, bool& out_has_mitm) noexcept {
+    out_has_mitm = false;
+    const SmServiceName name = SmServiceName::FromCString(service_name);
+    u8 has_mitm = 0;
+    const Result rc = TipcSmDispatch(sm_mitm_cmd::kAtmosphereHasMitm, &name, sizeof(name),
+                                     &has_mitm, sizeof(has_mitm), 0, nullptr);
+    if (R_SUCCEEDED(rc)) {
+        out_has_mitm = (has_mitm & 1u) != 0;
+    }
+    return rc;
+}
+
+Result SmClearFutureMitm(const char* service_name) noexcept {
+    const SmServiceName name = SmServiceName::FromCString(service_name);
+    return TipcSmDispatch(sm_mitm_cmd::kAtmosphereClearFutureMitm, &name, sizeof(name),
+                          nullptr, 0, 0, nullptr);
+}
+
 void PrepareTlsRecvList(void* tls_base, uint8_t* rx_ptr_buf, size_t slot_count, size_t slot_size) noexcept {
     HipcMetadata meta{};
     meta.type = 0;
@@ -90,26 +108,31 @@ void PrepareTlsRecvList(void* tls_base, uint8_t* rx_ptr_buf, size_t slot_count, 
 }
 
 bool ServeQueryIteration(Handle query_session, Handle& in_out_reply_target, uint8_t* /*scratch_buf*/, size_t /*scratch_size*/) noexcept {
-    if (in_out_reply_target == 0) {
-        std::memset(armGetTls(), 0, 16);
-    }
+    in_out_reply_target = 0;
+    std::memset(armGetTls(), 0, 16);
 
     s32 idx = -1;
-    const Result rc = svcReplyAndReceive(&idx, &query_session, 1, in_out_reply_target, 100'000'000ULL);
+    const Result rc = svcReplyAndReceive(&idx, &query_session, 1, 0, 100'000'000ULL);
     if (rc == 0xEA01) {  // KernelError_TimedOut
-        in_out_reply_target = 0;
         return true;
     }
     if (R_FAILED(rc)) {
-        in_out_reply_target = 0;
         return false;
     }
 
     void* tls = armGetTls();
     const u16 type = *static_cast<const u16*>(tls);
     if (type == CmifCommandType_Close || type == 15) {
-        WriteSimpleCmifResponse(tls, 0, nullptr, 0);
-        in_out_reply_target = 0;
+        if (type == 15) {
+            HipcMetadata meta{};
+            meta.type = 15;
+            meta.num_data_words = 1;
+            HipcRequest out_req = hipcMakeRequest(tls, meta);
+            out_req.data_words[0] = 0;
+        } else {
+            WriteSimpleCmifResponse(tls, 0, nullptr, 0);
+        }
+        (void)svcReplyAndReceive(&idx, nullptr, 0, query_session, 0);
         return false;
     }
 
@@ -142,8 +165,9 @@ bool ServeQueryIteration(Handle query_session, Handle& in_out_reply_target, uint
         WriteSimpleCmifResponse(tls, 0, &decision, sizeof(decision));
     }
 
-    in_out_reply_target = query_session;
-    return true;
+    // Flush ShouldMitm reply immediately so stopping the acceptor can never orphan an active sm: request.
+    const Result rep_rc = svcReplyAndReceive(&idx, nullptr, 0, query_session, 0);
+    return R_SUCCEEDED(rep_rc) || rep_rc == 0xEA01;
 }
 
 bool ParseIncomingHipc(void* tls_base, ParsedRequestInfo& out_info) noexcept {

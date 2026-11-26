@@ -241,15 +241,22 @@ int main() {
         YUMI_CHECK(qr.At(8, 6) && !qr.At(9, 6));
     }
 
-    // 8. MITM self/system PID exclusion policy
+    // 8. MITM self/system/applet PID exclusion policy
     YUMI_TEST("mitm_policy_self_and_system_protection");
     {
         YUMI_CHECK(!mitm::ShouldMitmProgramId(ipc::kYumiProgramId));
+        YUMI_CHECK(!mitm::ShouldMitmProgramId(mitm::kYumiAppProgramId));
+        YUMI_CHECK(!mitm::ShouldMitmProgramId(0x420000000007E51AULL));  // ovlloader / custom sysmodules
         YUMI_CHECK(!mitm::ShouldMitmProgramId(0x0100000000000000ULL));
         YUMI_CHECK(!mitm::ShouldMitmProgramId(0x0100000000000FFFULL));
-        YUMI_CHECK(mitm::ShouldMitmProgramId(0x0100000000001000ULL));
-        YUMI_CHECK(mitm::ShouldMitmProgramId(0x01006A800016E000ULL));
-        YUMI_CHECK(mitm::ShouldMitmProgramId(mitm::kYumiAppProgramId));
+        YUMI_CHECK(!mitm::ShouldMitmProgramId(0x0100000000001000ULL));  // qlaunch (Home Menu)
+        YUMI_CHECK(!mitm::ShouldMitmProgramId(0x010000000000100CULL));  // overlayDisp
+        YUMI_CHECK(!mitm::ShouldMitmProgramId(0x010000000000100DULL));  // Album / hbmenu applet
+        YUMI_CHECK(mitm::ShouldMitmProgramId(0x010000000000100AULL));   // Web applet
+        YUMI_CHECK(mitm::ShouldMitmProgramId(0x010000000000100FULL));   // Browser applet
+        YUMI_CHECK(mitm::ShouldMitmProgramId(0x01003A400C3DA000ULL));   // YouTube
+        YUMI_CHECK(mitm::ShouldMitmProgramId(0x01006A800016E000ULL));   // User game title
+        YUMI_CHECK(mitm::ShouldMitmProgramId(0x050000BADDAD0000ULL));   // Homebrew forwarder
     }
 
     // 9. IPC connection record binary contract & MITM bitmask
@@ -1379,6 +1386,26 @@ int main() {
 
         sp_stop.store(true);
         sp_srv.join();
+    }
+
+    // Type-safe JSON deserialization under -fno-exceptions (malformed field types must not abort)
+    YUMI_TEST("json_type_mismatch_no_abort");
+    {
+        const auto bad_settings = store::DeserializeSettingsJson(
+            R"({"bypass_lan":"yes","block_quic":123,"remote_dns":null,"subscription_update_minutes":"60","auto_connect_on_boot":42})");
+        YUMI_CHECK(bad_settings.has_value());
+        YUMI_CHECK(bad_settings->bypass_lan == true);
+        YUMI_CHECK(bad_settings->auto_connect_on_boot == false);
+
+        const auto bad_subs = store::DeserializeSubscriptionsJson(
+            R"([{"id":"s1","name":123,"enabled":"true","node_count":null,"last_updated_epoch_ms":"bad"}])");
+        YUMI_CHECK(bad_subs.has_value() && bad_subs->size() == 1);
+        YUMI_CHECK((*bad_subs)[0].id == "s1" && (*bad_subs)[0].enabled == true);
+
+        const auto bad_nodes = store::DeserializeNodesJson(
+            R"([{"id":"n1","server":"1.2.3.4","port":"443","tls":{"enabled":"yes"},"wireguard":{"mtu":"1408"}}])");
+        YUMI_CHECK(bad_nodes.has_value() && bad_nodes->size() == 1);
+        YUMI_CHECK((*bad_nodes)[0].port == 443 && (*bad_nodes)[0].wireguard.mtu == 1408);
     }
 
     std::printf("ALL %d UNIT TESTS PASSED\n", g_tests_run);

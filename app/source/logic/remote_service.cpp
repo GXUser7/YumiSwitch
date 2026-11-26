@@ -467,11 +467,12 @@ bool RemoteBeacon::Start(std::string host_id,
 
 void RemoteBeacon::Stop() noexcept {
     stop_requested_.store(true);
+    // Join worker BEFORE closing sock_ so Switch bsdClose never races with an active bsdPoll(fd).
+    worker_.Join();
     {
         SimpleLock lk(mu_);
         sock_.Close();
     }
-    worker_.Join();
     bound_port_.store(0);
     running_.store(false);
 }
@@ -494,7 +495,9 @@ void RemoteBeacon::RunLoop() {
         net::PollItem pi{};
         pi.fd = fd;
         pi.want_read = true;
-        if (net::PollSockets(&pi, 1, 150) <= 0 || !pi.rev_read) continue;
+        const int poll_rc = net::PollSockets(&pi, 1, 150);
+        if (stop_requested_.load()) break;
+        if (poll_rc <= 0 || !pi.rev_read) continue;
 
         uint32_t from_ip = 0;
         uint16_t from_port = 0;
@@ -575,13 +578,11 @@ bool RemoteServer::Start(std::string advertise_host,
 
 void RemoteServer::Stop() noexcept {
     stop_requested_.store(true);
-    {
-        SimpleLock lk(mu_);
-        listener_.Close();
-    }
+    // Join worker BEFORE closing sockets so Switch bsdClose never races with an active bsdPoll(fd).
     worker_.Join();
     {
         SimpleLock lk(mu_);
+        listener_.Close();
         for (auto& c : clients_) c.sock.Close();
         clients_.clear();
     }
@@ -1014,6 +1015,7 @@ void RemoteServer::RunLoop() {
         }
 
         net::PollSockets(items.data(), items.size(), 80);
+        if (stop_requested_.load()) break;
 
         if (items[0].rev_read) {
             AcceptNewClients();

@@ -134,7 +134,7 @@ bool YumiCtlServer::StartService() {
         AppendLog(LogLevel::Error, "smRegisterService(yumi:ctl) failed");
         return false;
     }
-    running_ = true;
+    running_.store(true);
     char msg[128];
     std::snprintf(msg, sizeof(msg), "yumi:ctl started (HOS=0x%06x gen=%u)",
                   hos_.packed_version, static_cast<unsigned>(hos_.generation));
@@ -143,7 +143,7 @@ bool YumiCtlServer::StartService() {
 }
 
 void YumiCtlServer::StopService() {
-    running_ = false;
+    running_.store(false);
     for (Handle h : sessions_) {
         if (h != INVALID_HANDLE) svcCloseHandle(h);
     }
@@ -353,6 +353,12 @@ Result YumiCtlServer::HandleRequestCommand(u32 cmd_id, const HipcParsedRequest& 
             WriteCmifResponse(tls, 0, nullptr, 0);
             return 0;
         }
+        case ipc::YumiCtlCmd::Shutdown: {
+            AppendLog(LogLevel::Info, "Graceful Shutdown() requested via yumi:ctl");
+            running_.store(false);
+            WriteCmifResponse(tls, 0, nullptr, 0);
+            return 0;
+        }
         default:
             WriteCmifResponse(tls, MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen), nullptr, 0);
             return 0;
@@ -364,7 +370,7 @@ void YumiCtlServer::RunLoop() {
     std::vector<Handle> wait_handles;
     wait_handles.reserve(1 + kMaxSessions);
 
-    while (running_) {
+    while (running_.load()) {
         wait_handles.clear();
         wait_handles.push_back(port_handle_);
         for (Handle h : sessions_) wait_handles.push_back(h);
@@ -426,6 +432,12 @@ void YumiCtlServer::RunLoop() {
                 } else {
                     u32 resp_size = 0;
                     HandleRequestCommand(hdr->command_id, parsed, resp_size);
+                }
+                if (!running_.load()) {
+                    // Flush the Shutdown reply before breaking so Ultrahand receives Result = 0 cleanly.
+                    s32 flush_idx = -1;
+                    (void)svcReplyAndReceive(&flush_idx, nullptr, 0, session, 0);
+                    break;
                 }
                 reply_target = session;
                 continue;

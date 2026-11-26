@@ -5,12 +5,13 @@
 #include "ipc/yumi_ctl_server.hpp"
 #include "mitm/network_mitm.hpp"
 #include "power/power_net_monitor.hpp"
+#include "yumi_nx/crypto.hpp"
 #include "yumi_nx/socket_io.hpp"
 #include "yumi_nx/tunnel_engine.hpp"
 #include <new>
 
-// Phase 2 sysmodule inner heap: 3 MB total (leaves 2.5 MB margin below HOS 20.0+ 5.5 MB budget).
-#define YUMI_INNER_HEAP_SIZE 0x300000
+// Compact sysmodule inner heap: 1.5 MB static BSS (keeps total System RAM ~2.4 MB on HOS 20.0+).
+#define YUMI_INNER_HEAP_SIZE 0x180000
 
 extern "C" {
 
@@ -18,7 +19,7 @@ u32 __nx_applet_type = AppletType_None;
 u32 __nx_fs_num_sessions = 1;
 
 void __libnx_initheap(void) {
-    alignas(16) static u8 inner_heap[YUMI_INNER_HEAP_SIZE];
+    alignas(0x1000) static u8 inner_heap[YUMI_INNER_HEAP_SIZE];
     extern void* fake_heap_start;
     extern void* fake_heap_end;
     fake_heap_start = inner_heap;
@@ -58,7 +59,7 @@ void __appExit(void) {
 
 int main(int, char**) {
     const auto hos = yumi_nx::sys::DetectHosCompat();
-    yumi_nx::net::SocketLayerInit();
+    yumi_nx::net::SocketLayerInit(true);
 
     yumi_nx::sys::YumiCtlServer server(hos, YUMI_INNER_HEAP_SIZE);
     if (!server.StartService()) {
@@ -104,6 +105,7 @@ int main(int, char**) {
     }
 
     server.StopService();
+    yumi_nx::net::crypto::RandomShutdown();
     yumi_nx::net::SocketLayerShutdown();
     return 0;
 }

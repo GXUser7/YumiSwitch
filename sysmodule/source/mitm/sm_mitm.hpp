@@ -39,11 +39,18 @@ Result SmUninstallMitm(const char* service_name) noexcept;
 /// Calls Atmosphère `sm:` TIPC command 65003 (`AcknowledgeMitmSession`).
 Result SmAcknowledgeMitmSession(const char* service_name, MitmProcessInfo& out_info, Handle& out_fwd_handle) noexcept;
 
+/// Calls Atmosphère `sm:` TIPC command 65004 (`HasMitm`).
+Result SmHasMitm(const char* service_name, bool& out_has_mitm) noexcept;
+
+/// Calls Atmosphère `sm:` TIPC command 65007 (`ClearFutureMitm`).
+/// MUST be called after `SmInstallMitm` once acceptor threads are running, otherwise `sm:` defers all requests forever.
+Result SmClearFutureMitm(const char* service_name) noexcept;
+
 /// Prepares thread-local IPC buffer with RecvList slots pointing to `rx_ptr_buf` before svcReplyAndReceive.
 void PrepareTlsRecvList(void* tls_base, uint8_t* rx_ptr_buf, size_t slot_count, size_t slot_size) noexcept;
 
-/// Serves one `ShouldMitm` IPC loop iteration on `query_session` using `ShouldMitmProgramId`.
-/// Sets `in_out_reply_target` to `query_session` on valid reply or `0` if session closed.
+/// Serves one `ShouldMitm` IPC loop iteration on `query_session` using `ShouldMitmProgramId`,
+/// flushing the reply immediately before returning so shutdown can never orphan a pending `sm:` query.
 bool ServeQueryIteration(Handle query_session, Handle& in_out_reply_target, uint8_t* scratch_buf, size_t scratch_size) noexcept;
 
 /// Context for inspecting and/or overriding a forwarded HIPC request cleanly without zero-copy aliasing violations.

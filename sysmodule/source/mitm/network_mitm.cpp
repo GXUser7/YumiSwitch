@@ -105,6 +105,17 @@ NetworkMitmManager::~NetworkMitmManager() {
 }
 
 bool NetworkMitmManager::StartAcceptor(ServiceAcceptor& acc) noexcept {
+    // Skip cleanly if another Atmosphère sysmodule (e.g. dns_mitm for sfdnsres) already owns this MITM.
+    bool already_mitmd = false;
+    if (R_SUCCEEDED(mitm_ipc::SmHasMitm(acc.name, already_mitmd)) && already_mitmd) {
+        if (ctl_server_) {
+            char msg[128]{};
+            std::snprintf(msg, sizeof(msg), "%s already has an active MITM; skipping hook", acc.name);
+            ctl_server_->AppendLog(LogLevel::Info, msg);
+        }
+        return false;
+    }
+
     const Result rc = mitm_ipc::SmInstallMitm(acc.name, acc.server_port, acc.query_session);
     if (R_FAILED(rc)) {
         if (ctl_server_) {
@@ -117,20 +128,37 @@ bool NetworkMitmManager::StartAcceptor(ServiceAcceptor& acc) noexcept {
     acc.installed = true;
 
     if (R_FAILED(threadCreate(&acc.query_thread, &NetworkMitmManager::QueryThreadEntry, &acc, acc.query_stack,
-                              sizeof(acc.query_stack), 0x3B, -2)) ||
-        R_FAILED(threadStart(&acc.query_thread))) {
+                              sizeof(acc.query_stack), 0x3B, -2))) {
+        StopAcceptor(acc);
+        return false;
+    }
+    if (R_FAILED(threadStart(&acc.query_thread))) {
+        threadClose(&acc.query_thread);
         StopAcceptor(acc);
         return false;
     }
     acc.query_thread_started = true;
 
     if (R_FAILED(threadCreate(&acc.server_thread, &NetworkMitmManager::ServerThreadEntry, &acc, acc.server_stack,
-                              sizeof(acc.server_stack), 0x3B, -2)) ||
-        R_FAILED(threadStart(&acc.server_thread))) {
+                              sizeof(acc.server_stack), 0x3B, -2))) {
+        StopAcceptor(acc);
+        return false;
+    }
+    if (R_FAILED(threadStart(&acc.server_thread))) {
+        threadClose(&acc.server_thread);
         StopAcceptor(acc);
         return false;
     }
     acc.server_thread_started = true;
+
+    // CRITICAL: Atmosphère InstallMitm adds a FutureMitm declaration that defers ALL GetServiceHandle calls
+    // for this service system-wide until ClearFutureMitm (TIPC 65007) is explicitly called.
+    const Result clr_rc = mitm_ipc::SmClearFutureMitm(acc.name);
+    if (R_FAILED(clr_rc) && ctl_server_) {
+        char msg[128]{};
+        std::snprintf(msg, sizeof(msg), "%s ClearFutureMitm failed: 0x%x", acc.name, clr_rc);
+        ctl_server_->AppendLog(LogLevel::Warn, msg);
+    }
 
     if (ctl_server_) {
         char msg[96]{};
@@ -141,11 +169,18 @@ bool NetworkMitmManager::StartAcceptor(ServiceAcceptor& acc) noexcept {
 }
 
 void NetworkMitmManager::StopAcceptor(ServiceAcceptor& acc) noexcept {
-    if (acc.query_session != INVALID_HANDLE) {
-        svcCancelSynchronization(acc.query_session);
+    // Uninstall MITM and clear any future declaration FIRST so sm: stops routing new clients immediately.
+    if (acc.installed) {
+        mitm_ipc::SmUninstallMitm(acc.name);
+        mitm_ipc::SmClearFutureMitm(acc.name);
+        acc.installed = false;
     }
-    if (acc.server_port != INVALID_HANDLE) {
-        svcCancelSynchronization(acc.server_port);
+    // svcCancelSynchronization operates on Thread handles, not session/port handles.
+    if (acc.query_thread_started) {
+        svcCancelSynchronization(acc.query_thread.handle);
+    }
+    if (acc.server_thread_started) {
+        svcCancelSynchronization(acc.server_thread.handle);
     }
     if (acc.server_thread_started) {
         threadWaitForExit(&acc.server_thread);
@@ -156,10 +191,6 @@ void NetworkMitmManager::StopAcceptor(ServiceAcceptor& acc) noexcept {
         threadWaitForExit(&acc.query_thread);
         threadClose(&acc.query_thread);
         acc.query_thread_started = false;
-    }
-    if (acc.installed) {
-        mitm_ipc::SmUninstallMitm(acc.name);
-        acc.installed = false;
     }
     if (acc.query_session != INVALID_HANDLE) {
         svcCloseHandle(acc.query_session);
@@ -206,8 +237,8 @@ void NetworkMitmManager::Stop() noexcept {
     for (size_t i = 0; i < kMaxWorkers; ++i) {
         if (workers_[i]) {
             workers_[i]->stop_requested.store(true);
-            if (workers_[i]->client_session != INVALID_HANDLE) {
-                svcCancelSynchronization(workers_[i]->client_session);
+            if (workers_[i]->thread.handle != INVALID_HANDLE) {
+                svcCancelSynchronization(workers_[i]->thread.handle);
             }
         }
     }
@@ -284,10 +315,7 @@ void NetworkMitmManager::RunQueryLoop(ServiceAcceptor& acc) noexcept {
     Handle reply_target = 0;
     while (!stop_requested_.load()) {
         if (!mitm_ipc::ServeQueryIteration(acc.query_session, reply_target, nullptr, 0)) {
-            if (stop_requested_.load()) {
-                break;
-            }
-            svcSleepThread(5'000'000ULL);
+            break;
         }
     }
 }
@@ -391,7 +419,9 @@ bool NetworkMitmManager::PreInspectBsd(WorkerSlot& slot,
 
     if (parsed.hipc_type == CmifCommandType_Control || parsed.hipc_type == CmifCommandType_ControlWithContext) {
         if (parsed.cmif_cmd_id == 3) {
-            const uint16_t max_ptr = static_cast<uint16_t>(kPointerSlotSize);
+            // Advertise 0 pointer-buffer size so SfBufferAttr_HipcAutoSelect clients use MapAlias buffers
+            // instead of sending oversized SendStatic payloads that overflow real bsd:u's pointer buffer.
+            const uint16_t max_ptr = 0u;
             mitm_ipc::WriteSimpleCmifResponse(tls_base, 0, &max_ptr, sizeof(max_ptr));
             return true;
         }
@@ -532,7 +562,9 @@ bool NetworkMitmManager::PreInspectSfdnsres(WorkerSlot& slot,
 
     if (parsed.hipc_type == CmifCommandType_Control || parsed.hipc_type == CmifCommandType_ControlWithContext) {
         if (parsed.cmif_cmd_id == 3) {
-            const uint16_t max_ptr = static_cast<uint16_t>(kPointerSlotSize);
+            // Advertise 0 pointer-buffer size so SfBufferAttr_HipcAutoSelect clients use MapAlias buffers
+            // instead of sending oversized SendStatic payloads that overflow real bsd:u's pointer buffer.
+            const uint16_t max_ptr = 0u;
             mitm_ipc::WriteSimpleCmifResponse(tls_base, 0, &max_ptr, sizeof(max_ptr));
             return true;
         }

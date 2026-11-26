@@ -1,6 +1,7 @@
 #pragma once
 
 #include <switch.h>
+#include <atomic>
 #include <cstdint>
 #include <vector>
 
@@ -69,7 +70,7 @@ private:
     uint64_t last_bps_tick_ns_ = 0;
     uint64_t window_up_bytes_ = 0;
     uint64_t window_down_bytes_ = 0;
-    bool running_ = false;
+    std::atomic<bool> running_{false};
 };
 
 }  // namespace yumi_nx::sys

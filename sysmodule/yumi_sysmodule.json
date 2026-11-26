@@ -10,7 +10,6 @@
   "main_thread_stack_size": "0x00010000",
   "main_thread_priority": 49,
   "default_cpu_id": 3,
-  "process_category": 0,
   "is_retail": true,
   "pool_partition": 2,
   "is_64_bit": true,
@@ -30,14 +29,16 @@
     "csrng"
   ],
   "service_host": [
-    "yumi:ctl"
+    "yumi:ctl",
+    "bsd:u",
+    "sfdnsres"
   ],
   "kernel_capabilities": [
     {
       "type": "kernel_flags",
       "value": {
-        "highest_thread_priority": 63,
-        "lowest_thread_priority": 24,
+        "highest_thread_priority": 24,
+        "lowest_thread_priority": 63,
         "lowest_cpu_id": 0,
         "highest_cpu_id": 3
       }
@@ -91,8 +92,18 @@
         "svcReplyAndReceiveLight": "0x42",
         "svcReplyAndReceive": "0x43",
         "svcReplyAndReceiveWithUserBuffer": "0x44",
-        "svcCreateEvent": "0x45"
+        "svcCreateEvent": "0x45",
+        "svcMapTransferMemory": "0x51",
+        "svcUnmapTransferMemory": "0x52"
       }
+    },
+    {
+      "type": "handle_table_size",
+      "value": 512
+    },
+    {
+      "type": "application_type",
+      "value": 0
     },
     {
       "type": "min_kernel_version",

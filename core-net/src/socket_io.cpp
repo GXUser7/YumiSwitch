@@ -59,23 +59,37 @@ bool IsConnectInProgressError() noexcept {
 
 }  // namespace
 
-bool SocketLayerInit() noexcept {
+bool SocketLayerInit(bool low_memory) noexcept {
     if (g_sock_inited.load()) return true;
 #ifdef _WIN32
+    (void)low_memory;
     WSADATA wsa{};
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return false;
     g_sock_inited.store(true);
     return true;
 #elif defined(__SWITCH__)
     SocketInitConfig cfg = *socketGetDefaultInitConfig();
-    cfg.tcp_tx_buf_size = 0x4000;
-    cfg.tcp_rx_buf_size = 0x4000;
-    cfg.tcp_tx_buf_max_size = 0x8000;
-    cfg.tcp_rx_buf_max_size = 0x8000;
-    cfg.udp_tx_buf_size = 0x2400;
-    cfg.udp_rx_buf_size = 0xA500;
-    cfg.sb_efficiency = 4;
-    cfg.num_bsd_sessions = 2;
+    if (low_memory) {
+        // Lean footprint for sysmodule under HOS 20.0+ System RAM limits (~212 KB transfer memory).
+        cfg.tcp_tx_buf_size = 0x4000;
+        cfg.tcp_rx_buf_size = 0x4000;
+        cfg.tcp_tx_buf_max_size = 0x8000;
+        cfg.tcp_rx_buf_max_size = 0x8000;
+        cfg.udp_tx_buf_size = 0x2400;
+        cfg.udp_rx_buf_size = 0x8000;
+        cfg.sb_efficiency = 2;
+        cfg.num_bsd_sessions = 2;
+    } else {
+        // Application mode: enough concurrent BSD sessions for Remote/Pairing/HTTP threads.
+        cfg.tcp_tx_buf_size = 0x4000;
+        cfg.tcp_rx_buf_size = 0x4000;
+        cfg.tcp_tx_buf_max_size = 0x8000;
+        cfg.tcp_rx_buf_max_size = 0x8000;
+        cfg.udp_tx_buf_size = 0x2400;
+        cfg.udp_rx_buf_size = 0xA500;
+        cfg.sb_efficiency = 4;
+        cfg.num_bsd_sessions = 8;
+    }
     cfg.bsd_service_type = BsdServiceType_User;
     const Result rc = socketInitialize(&cfg);
     if (R_SUCCEEDED(rc)) {
@@ -84,6 +98,7 @@ bool SocketLayerInit() noexcept {
     }
     return false;
 #else
+    (void)low_memory;
     g_sock_inited.store(true);
     return true;
 #endif

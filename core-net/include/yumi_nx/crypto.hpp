@@ -13,6 +13,9 @@ namespace yumi_nx::net::crypto {
 /// Cryptographically secure random bytes (Switch csrng / Windows BCryptGenRandom).
 bool RandomBytes(uint8_t* out, size_t len) noexcept;
 
+/// Releases Switch csrng service session cleanly on process exit (no-op on other platforms).
+void RandomShutdown() noexcept;
+
 /// Constant-time byte comparison.
 [[nodiscard]] bool ConstantTimeEqual(const uint8_t* a, const uint8_t* b, size_t len) noexcept;
 

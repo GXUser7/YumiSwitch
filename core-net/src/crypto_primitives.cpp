@@ -822,19 +822,25 @@ void Poly1305TagAead(const uint8_t otk[32],
 
 // ---------------- RandomBytes & ConstantTimeEqual ----------------
 
+#ifdef __SWITCH__
+namespace {
+Mutex g_csrng_mtx{};
+std::atomic<int> g_csrng_state{0};  // 0=uninit, 1=ok, 2=failed
+}  // namespace
+#endif
+
 bool RandomBytes(uint8_t* out, size_t len) noexcept {
     if (!out || len == 0) return true;
 #ifdef __SWITCH__
-    static std::atomic<int> s_csrng_state{0};  // 0=uninit, 1=ok, 2=failed
-    int st = s_csrng_state.load();
+    int st = g_csrng_state.load(std::memory_order_acquire);
     if (st == 0) {
-        if (R_SUCCEEDED(csrngInitialize())) {
-            s_csrng_state.store(1);
-            st = 1;
-        } else {
-            s_csrng_state.store(2);
-            st = 2;
+        mutexLock(&g_csrng_mtx);
+        st = g_csrng_state.load(std::memory_order_relaxed);
+        if (st == 0) {
+            st = R_SUCCEEDED(csrngInitialize()) ? 1 : 2;
+            g_csrng_state.store(st, std::memory_order_release);
         }
+        mutexUnlock(&g_csrng_mtx);
     }
     if (st == 1 && R_SUCCEEDED(csrngGetRandomBytes(out, len))) {
         return true;
@@ -871,6 +877,17 @@ bool RandomBytes(uint8_t* out, size_t len) noexcept {
     }
     ::close(fd);
     return true;
+#endif
+}
+
+void RandomShutdown() noexcept {
+#ifdef __SWITCH__
+    mutexLock(&g_csrng_mtx);
+    if (g_csrng_state.load(std::memory_order_relaxed) == 1) {
+        csrngExit();
+    }
+    g_csrng_state.store(0, std::memory_order_release);
+    mutexUnlock(&g_csrng_mtx);
 #endif
 }
 

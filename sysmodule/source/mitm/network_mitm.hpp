@@ -45,12 +45,12 @@ private:
         char remote_host[64] = {};
     };
 
-    static constexpr size_t kMaxWorkers = 12;
+    static constexpr size_t kMaxWorkers = 8;
     static constexpr size_t kSocketsPerWorker = 64;
     static constexpr size_t kWorkerStackSize = 0x3000;   // 12 KB
     static constexpr size_t kPointerSlotCount = 4;
-    static constexpr size_t kPointerSlotSize = 0x800;    // 2 KB
-    static constexpr size_t kStagingSize = 0x4000;       // 16 KB staging per active session
+    static constexpr size_t kPointerSlotSize = 0x400;    // 1 KB
+    static constexpr size_t kStagingSize = 0x2000;       // 8 KB staging per active session (dyn fallback up to 512 KB)
 
     struct WorkerSlot {
         std::atomic<bool> stop_requested{false};

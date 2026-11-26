@@ -32,6 +32,7 @@ enum class YumiCtlCmd : uint32_t {
     GetLogs = 8,
     GetConnectionLog = 9,
     ResetConnections = 10,
+    Shutdown = 11,
 };
 
 namespace mitm_flag {

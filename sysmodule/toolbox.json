@@ -1,5 +1,7 @@
 {
   "name": "Yumi VPN",
   "tid": "4200000000079801",
-  "requires_reboot": false
+  "requires_reboot": true,
+  "shutdown_service": "yumi:ctl",
+  "shutdown_cmd": 11
 }
