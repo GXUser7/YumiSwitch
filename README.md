@@ -10,14 +10,14 @@
 
 Не нужно ничего компилировать — достаточно перенести готовые файлы на microSD-карту приставки:
 
-1. **Скачайте архив** `YumiSwitch-v1.0.0-sd.zip` со страницы [GitHub Releases](https://github.com/GXUser7/YumiSwitch/releases/latest).
+1. **Скачайте архив** `YumiSwitch-v1.0.1-sd.zip` со страницы [GitHub Releases](https://github.com/GXUser7/YumiSwitch/releases/latest).
 2. **Распакуйте содержимое архива в корень microSD-карты Switch** (с заменой/слиянием папок — чтобы в корне карты оказались `atmosphere/` и `switch/`):
    - `atmosphere/contents/4200000000079801/exefs.nsp` — фоновый VPN sysmodule
-   - `atmosphere/contents/4200000000079801/toolbox.json` — запись **Yumi VPN** для sysmodule-менеджеров
+   - `atmosphere/contents/4200000000079801/toolbox.json` — запись **Yumi VPN** для sysmodule-менеджеров (`requires_reboot: true`)
    - `atmosphere/contents/4200000000079801/flags/boot2.flag` — автозапуск модуля при старте Switch
    - `switch/yumi/yumi.nro` — основное приложение
    - `switch/.overlays/yumi.ovl` — оверлей для **Ultrahand** / **Tesla Menu**
-3. **Перезагрузите Switch** (в Hekate / Atmosphere модуль запустится сам благодаря `boot2.flag`) или вручную включите **Yumi VPN** через sysmodule-менеджер в Ultrahand/Hekate Toolbox.
+3. **Обязательно перезагрузите Switch** после установки, обновления файлов или переключения **Yumi VPN** в sysmodule-менеджере (`boot2.flag` запустит обновлённый модуль чисто при старте системы).
 4. **Откройте приложение `Yumi NX`:**
    - Запустите любую игру/приложение, **удерживая кнопку `R`**, чтобы открыть Homebrew Menu в режиме *Title Takeover* (с полным доступом к оперативной памяти), и выберите **Yumi NX**.
    - *(Запуск из Альбома в applet-режиме ограничивает RAM и не рекомендуется.)*
@@ -109,12 +109,12 @@
 - `sysmodule/` — фоновый процесс `yumi_sysmodule.nsp` (`-fno-exceptions -fno-rtti`, сборка с `--gc-sections`, лимит памяти <= 5.5 МБ для HOS 20.0+).
 - `app/` — интерфейс `yumi.nro` (`NanoVG` + `Yoga`), сервисы (`HttpClient`, `PairingServer`, `RemoteServer`/`RemoteBeacon`, `LatencyTester`, `HosApps`, `SpeedTester`, `UpdateChecker`) и десктопный предпросмотр `desktop_preview.exe`.
 - `overlay/` — Tesla/Ultrahand оверлей `yumi.ovl` (`libtesla`).
-- `tests/` — 28 unit- и E2E-тестов (`yumi_tests.exe`).
+- `tests/` — 29 unit- и E2E-тестов (`yumi_tests.exe`).
 
 Для самостоятельной сборки на Windows требуются **MSYS2 (`ucrt64` CMake/Ninja/MinGW, GLFW, GLEW)** и **devkitPro (`devkitA64`, `libnx`, `switch-tools`)**:
 
 ```powershell
-# Сборка всех целей (Windows-тесты + Desktop-превью + Switch .nsp/.nro/.ovl) и прогон 28 тестов
+# Сборка всех целей (Windows-тесты + Desktop-превью + Switch .nsp/.nro/.ovl) и прогон 29 тестов
 .\tools\build.ps1 -Target all
 
 # Только ПК-тесты (yumi_tests.exe) и предпросмотр UI (desktop_preview.exe)

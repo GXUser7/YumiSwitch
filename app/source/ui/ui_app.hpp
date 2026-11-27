@@ -282,7 +282,7 @@ private:
     std::string speedtest_url_dl_ = "https://speed.cloudflare.com/__down?bytes=2000000";
     std::string speedtest_url_ul_ = "https://speed.cloudflare.com/__up";
     std::string update_repo_ = "GXUser7/YumiSwitch";
-    std::string app_version_ = "1.0.0";
+    std::string app_version_ = "1.0.1";
 
     int inspected_node_idx_ = 0;
     int proto_filter_ = 0;      // 0=All, 1=VLESS, 2=WG, 3=Hy2, 4=Trojan, 5=SS
@@ -294,7 +294,7 @@ private:
     bool phone_scanned_ = false;
     bool sd_imported_ = false;
     std::string speedtest_result_ = "Не замерялось";
-    std::string update_status_ = "v1.0.0 · Актуально";
+    std::string update_status_ = "v1.0.1 · Актуально";
 
     QrMatrix qr_pair_{};
     QrMatrix qr_remote_{};

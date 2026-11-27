@@ -9,7 +9,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 APP_TITLE   := Yumi NX
 APP_AUTHOR  := YumiSwitch
-APP_VERSION := 1.0.0
+APP_VERSION := 1.0.1
 
 TARGET      := yumi
 BUILD       := build

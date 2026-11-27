@@ -26,7 +26,7 @@ struct UpdateProgressState {
     bool busy = false;
     bool finished = false;
     double progress_0_1 = 0.0;
-    std::string status_line = "v1.0.0 · Актуально";
+    std::string status_line = "v1.0.1 · Актуально";
     std::string downloaded_path;
     UpdateReleaseInfo release{};
 };
@@ -76,7 +76,7 @@ private:
     std::atomic<bool> busy_{false};
 
     std::string owner_repo_ = "GXUser7/YumiSwitch";
-    std::string current_version_ = "1.0.0";
+    std::string current_version_ = "1.0.1";
     AppSettings settings_{};
     ProxyNode owned_via_node_{};
     bool has_via_node_ = false;

@@ -188,7 +188,7 @@ bool AsyncUpdateChecker::StartCheck(std::string owner_repo,
     {
         SimpleLock lk(mu_);
         owner_repo_ = owner_repo.empty() ? std::string("GXUser7/YumiSwitch") : std::move(owner_repo);
-        current_version_ = current_version.empty() ? std::string("1.0.0") : std::move(current_version);
+        current_version_ = current_version.empty() ? std::string("1.0.1") : std::move(current_version);
         settings_ = std::move(settings);
         has_via_node_ = (via_node != nullptr);
         if (has_via_node_) owned_via_node_ = *via_node;
